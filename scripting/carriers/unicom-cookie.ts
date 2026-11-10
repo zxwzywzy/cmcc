@@ -15,5 +15,6 @@ export async function queryUnicomCookie(cookie:string):Promise<Metrics>{
  const metrics=normalizeUnicomCookie(fee,detail) as Metrics
  // Older summary still supplies points for some App versions; failure never discards the primary readings.
  if(metrics.points===undefined){const legacy=await read('https://m.client.10010.com/mobileService/home/queryUserInfoSeven.htm'+query);Object.assign(metrics,unicomExtras(legacy))}
+ if(match)metrics.phoneTail=match[1].slice(-4)
  return metrics
 }

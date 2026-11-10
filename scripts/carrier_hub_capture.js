@@ -61,18 +61,38 @@
       if (r?.resultCode !== "0000" || !r.data) throw Error("\u7535\u4FE1\u4F1A\u8BDD\u5931\u6548\u6216\u8FD4\u56DE\u7ED3\u6784\u672A\u9002\u914D");
       const d = r.data;
       out.balance = number(d.balanceInfo?.indexBalanceDataInfo?.balance);
-      const n = number(d.flowInfo?.commonFlow?.balance);
-      if (n !== void 0) out.flowMB = n / 1024;
-      const used = number(d.flowInfo?.commonFlow?.used);
-      if (used !== void 0 && used >= 0) {
-        out.flowUsedMB = used / 1024;
-        if (n !== void 0 && n + used >= 0) out.flowTotalMB = (n + used) / 1024;
+      const common = d.flowInfo?.commonFlow, all = d.flowInfo?.totalAmount;
+      let f = common, n = number(common?.balance), used = number(common?.used), total = number(common?.total);
+      if (n === void 0 && used !== void 0 && total !== void 0 && total >= used) n = total - used;
+      out.flowScope = "general";
+      if (n === void 0) {
+        f = all;
+        used = number(all?.used);
+        total = number(all?.total);
+        if (used !== void 0 && total !== void 0 && total >= used) {
+          n = total - used;
+          out.flowScope = "all";
+        }
       }
-      out.voice = number(d.voiceInfo?.voiceDataInfo?.balance);
-      const voiceUsed = number(d.voiceInfo?.voiceDataInfo?.used);
-      if (voiceUsed !== void 0 && voiceUsed >= 0) {
+      if (n !== void 0 && n >= 0) {
+        out.flowMB = n / 1024;
+        if (used !== void 0 && used >= 0) {
+          out.flowUsedMB = used / 1024;
+          out.flowTotalMB = (n + used) / 1024;
+        } else if (total !== void 0 && total >= n) {
+          out.flowTotalMB = total / 1024;
+          out.flowUsedMB = (total - n) / 1024;
+        }
+      }
+      const v = d.voiceInfo?.voiceDataInfo, voiceUsed = number(v?.used), voiceTotal = number(v?.total);
+      out.voice = number(v?.balance);
+      if (out.voice === void 0 && voiceUsed !== void 0 && voiceTotal !== void 0 && voiceTotal >= voiceUsed) out.voice = voiceTotal - voiceUsed;
+      if (out.voice !== void 0 && voiceUsed !== void 0 && voiceUsed >= 0) {
         out.voiceUsed = voiceUsed;
-        if (out.voice !== void 0 && out.voice + voiceUsed >= 0) out.voiceTotal = out.voice + voiceUsed;
+        out.voiceTotal = out.voice + voiceUsed;
+      } else if (out.voice !== void 0 && voiceTotal !== void 0 && voiceTotal >= out.voice) {
+        out.voiceTotal = voiceTotal;
+        out.voiceUsed = voiceTotal - out.voice;
       }
     } else throw Error("\u672A\u77E5\u8FD0\u8425\u5546");
     if (!["balance", "flowMB", "voice"].some((k) => Number.isFinite(out[k]))) throw Error("\u672A\u8BC6\u522B\u51FA\u53EF\u663E\u793A\u7684\u4F59\u989D\u6216\u4F59\u91CF\uFF0C\u672A\u4FDD\u5B58");

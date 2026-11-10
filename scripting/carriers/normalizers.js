@@ -55,11 +55,17 @@ export function normalize(provider,json) {
   const d=r.data;
   // qryImportantData index balance is yuan, not cents.
   out.balance=number(d.balanceInfo?.indexBalanceDataInfo?.balance);
-  const n=number(d.flowInfo?.commonFlow?.balance);
-  if(n!==undefined)out.flowMB=n/1024; // commonFlow is KB, excludes directional data
-  const used=number(d.flowInfo?.commonFlow?.used);if(used!==undefined&&used>=0){out.flowUsedMB=used/1024;if(n!==undefined&&n+used>=0)out.flowTotalMB=(n+used)/1024;}
-  out.voice=number(d.voiceInfo?.voiceDataInfo?.balance);
-  const voiceUsed=number(d.voiceInfo?.voiceDataInfo?.used);if(voiceUsed!==undefined&&voiceUsed>=0){out.voiceUsed=voiceUsed;if(out.voice!==undefined&&out.voice+voiceUsed>=0)out.voiceTotal=out.voice+voiceUsed;}
+  const common=d.flowInfo?.commonFlow,all=d.flowInfo?.totalAmount;
+  let f=common,n=number(common?.balance),used=number(common?.used),total=number(common?.total);
+  if(n===undefined&&used!==undefined&&total!==undefined&&total>=used)n=total-used;
+  out.flowScope='general';
+  if(n===undefined){f=all;used=number(all?.used);total=number(all?.total);if(used!==undefined&&total!==undefined&&total>=used){n=total-used;out.flowScope='all';}}
+  if(n!==undefined&&n>=0){out.flowMB=n/1024;if(used!==undefined&&used>=0){out.flowUsedMB=used/1024;out.flowTotalMB=(n+used)/1024;}else if(total!==undefined&&total>=n){out.flowTotalMB=total/1024;out.flowUsedMB=(total-n)/1024;}}
+  const v=d.voiceInfo?.voiceDataInfo,voiceUsed=number(v?.used),voiceTotal=number(v?.total);
+  out.voice=number(v?.balance);
+  if(out.voice===undefined&&voiceUsed!==undefined&&voiceTotal!==undefined&&voiceTotal>=voiceUsed)out.voice=voiceTotal-voiceUsed;
+  if(out.voice!==undefined&&voiceUsed!==undefined&&voiceUsed>=0){out.voiceUsed=voiceUsed;out.voiceTotal=out.voice+voiceUsed;}
+  else if(out.voice!==undefined&&voiceTotal!==undefined&&voiceTotal>=out.voice){out.voiceTotal=voiceTotal;out.voiceUsed=voiceTotal-out.voice;}
  } else throw Error('未知运营商');
  if(!['balance','flowMB','voice'].some(k=>Number.isFinite(out[k])))throw Error('未识别出可显示的余额或余量，未保存');
  for(const key of ['balance','flowMB','voice'])if(!Number.isFinite(out[key]))delete out[key];

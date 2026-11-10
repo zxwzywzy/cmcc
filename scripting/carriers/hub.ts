@@ -1,11 +1,12 @@
 import { fetch } from 'scripting'
+import { configureTelecomLogin, queryTelecomLogin, telecomLoginInfo, telecomAccountMatches, removeTelecomLogin } from './telecom-login'
 import { CARRIER_STYLE_NAMES, resolveCarrierStyle, rememberUsage, clearUsage, type SharedCarrierStyle, type CarrierFamily } from './carrier-design'
 import { queryUnicomCookie } from './unicom-cookie'
 import { queryTelecomRequest, telecomRequest, telecomIdentity } from './telecom-cookie'
 import { endpoint, normalize, safeRequest, names } from './normalizers.js'
 import { loadAccount as loadMobile, listAccounts as mobileAccounts, importFromBoxJS as importMobile, removeAccount as removeMobile, clearCache as clearMobileCache } from './mobile/api'
 export type Provider = 'cmcc' | 'unicom' | 'telecom' | 'broadnet'
-export type Metrics = {provider:Provider; balance?:number; flowMB?:number; voice?:number; flowUsedMB?:number; flowTotalMB?:number; voiceUsed?:number; voiceTotal?:number; unicomSchema?:number;telecomSchema?:number;points?:number;packageName?:string;sms?:number;resourceDetails?:{name:string;kind:string;unit?:string;remaining?:number;used?:number;total?:number}[]; fetchedAt:number}
+export type Metrics = {provider:Provider; balance?:number;phoneTail?:string;flowScope?:'general'|'all'; flowMB?:number; voice?:number; flowUsedMB?:number; flowTotalMB?:number; voiceUsed?:number; voiceTotal?:number; unicomSchema?:number;telecomSchema?:number;points?:number;packageName?:string;sms?:number;resourceDetails?:{name:string;kind:string;unit?:string;remaining?:number;used?:number;total?:number}[]; fetchedAt:number}
 export type CarrierRecord = {metrics:Metrics;request:any;queryReady:boolean}
 export type CarrierState = {provider:Provider;metrics?:Metrics;message?:string;stale?:boolean}
 const TELECOM_COOKIE='carrier.hub.telecom.app.request.v1'
@@ -24,7 +25,7 @@ export function savePreferences(host:string,refresh:number){
 }
 function read():Partial<Record<Provider,CarrierRecord>> {try{return JSON.parse(Keychain.get(CREDENTIALS)||'{}')}catch{return {}}}
 function write(v:Partial<Record<Provider,CarrierRecord>>){Keychain.set(CREDENTIALS,JSON.stringify(v));for(const record of Object.values(v)){if(record?.metrics)rememberUsage(record.metrics)}}
-export function forget(p:Provider){clearUsage(p);if(p==='cmcc'){for(const tel of mobileAccounts())removeMobile(tel)}else{const x=read();delete x[p];write(x);if(p==='unicom')Keychain.remove(UNICOM_COOKIE);if(p==='telecom')Keychain.remove(TELECOM_COOKIE)}}
+export function forget(p:Provider){clearUsage(p);if(p==='cmcc'){for(const tel of mobileAccounts())removeMobile(tel)}else{const x=read();delete x[p];write(x);if(p==='unicom')Keychain.remove(UNICOM_COOKIE);if(p==='telecom'){Keychain.remove(TELECOM_COOKIE);removeTelecomLogin()}}}
 function validMetrics(p:Provider,m:any):m is Metrics {
  return m&&m.provider===p&&typeof m.fetchedAt==='number'&&Number.isFinite(m.fetchedAt)&&['balance','flowMB','voice'].some(k=>typeof m[k]==='number'&&Number.isFinite(m[k]))
 }
@@ -42,6 +43,7 @@ export async function importAll(hostOverride?:string):Promise<string>{
   const records=read();const imported: string[]=[]
   for(const p of ['unicom','telecom','broadnet'] as Provider[]){
    if(p==='unicom'&&Keychain.get(UNICOM_COOKIE))continue
+   if(p==='telecom'&&telecomLoginInfo())continue
    const r=raw.accounts[p];if(!r||!validMetrics(p,r.metrics))continue
    const request=safeRequest(r.request)
    if(request&&endpoint(request.url)!==p)continue
@@ -68,7 +70,7 @@ export async function importAll(hostOverride?:string):Promise<string>{
   const r=await fetch(`https://${host}/query/data/10000.app.request`)
   const data=r.ok?await r.json() as {val?:unknown}:{}
   const req=typeof data.val==='string'?telecomRequest(JSON.parse(data.val)):null
-  if(req){
+  if(req&&!telecomLoginInfo()){
    const serialized=JSON.stringify(req),previous=Keychain.get(TELECOM_COOKIE)
    if(previous!==serialized){
     let same=false;try{const a=telecomIdentity(JSON.parse(previous||'null')),b=telecomIdentity(req);same=!!a&&a===b}catch{}
@@ -111,6 +113,11 @@ export async function loadProvider(p:Provider,force=false):Promise<CarrierState>
     return {provider:p,metrics}
    }catch{return {provider:p,metrics:record?.metrics,stale:!!record,message:'联通 Cookie 已导入，但查询失败；请重新抓取或检查接口兼容性'}}
   }
+ }
+ if(p==='telecom'&&telecomLoginInfo()){
+  if(record&&!force&&record.metrics.telecomSchema===3&&Date.now()-record.metrics.fetchedAt<300000)return {provider:p,metrics:record.metrics}
+  try{const metrics=await queryTelecomLogin();const saved=read();saved.telecom={metrics,request:null,queryReady:false};write(saved);return {provider:p,metrics}}
+  catch{return {provider:p,metrics:record?.metrics,stale:!!record,message:'电信登录或查询失败，请检查网络、密码，或在官方 App 完成安全验证'}}
  }
  if(p==='telecom'&&Keychain.get(TELECOM_COOKIE)){
   if(record&&!force&&record.metrics.telecomSchema===2&&Date.now()-record.metrics.fetchedAt<300000)return {provider:p,metrics:record.metrics}
@@ -160,3 +167,17 @@ export function importedProviders():Provider[]{
  const saved=read()
  return providerIds.filter(p=>p==='cmcc'?mobileAccounts().length>0:!!saved[p]?.metrics)
 }
+
+export async function loginTelecomAccount(phone:string,password:string,deviceID=''){
+ const sameAccount=telecomAccountMatches(phone)
+ const metrics=await configureTelecomLogin(phone,password,deviceID)
+ if(!sameAccount)clearUsage('telecom')
+ Keychain.remove(TELECOM_COOKIE)
+ const saved=read();saved.telecom={metrics,request:null,queryReady:false};write(saved)
+ return metrics
+}
+export { telecomLoginInfo }
+const NOTES='carrier.hub.account.notes.v1'
+export function carrierNote(p:Provider):string{try{return JSON.parse(store.get<string>(NOTES)||'{}')[p]||''}catch{return ''}}
+export function setCarrierNote(p:Provider,note:string){let saved:any={};try{saved=JSON.parse(store.get<string>(NOTES)||'{}')}catch{};store.set(NOTES,JSON.stringify({...saved,[p]:note.trim().slice(0,40)}))}
+export function accountTitle(s:CarrierState){return carrierNote(s.provider)||(s.metrics?.phoneTail?'尾号 '+s.metrics.phoneTail:providerNames[s.provider])}

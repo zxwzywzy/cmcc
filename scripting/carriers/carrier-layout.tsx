@@ -23,7 +23,7 @@ function LayoutBody({ctx,state,skin,states}:{ctx:Ctx;state:CarrierState;skin:Sha
   </VStack>
  }
  const meters=<VStack spacing={small?4:0} frame={{maxWidth:'infinity',maxHeight:'infinity'}}>
-  {small?compactQuota('流量',m?.flowMB,m?.flowTotalMB):<RemainingMeter ctx={ctx} label={state.provider==='broadnet'?'流量':'通用'} remain={m?.flowMB} total={m?.flowTotalMB} used={m?.flowUsedMB}/>}
+  {small?compactQuota('流量',m?.flowMB,m?.flowTotalMB):<RemainingMeter ctx={ctx} label={m?.flowScope==='all'?'总量':state.provider==='broadnet'?'流量':'通用'} remain={m?.flowMB} total={m?.flowTotalMB} used={m?.flowUsedMB}/>}
   {small?compactQuota('语音',m?.voice,m?.voiceTotal,true):<RemainingMeter ctx={ctx} label="语音" remain={m?.voice} total={m?.voiceTotal} used={m?.voiceUsed} voice/>}
  </VStack>
  const chart=(count=large?14:small?5:7,height=large?80:small?25:40)=>{

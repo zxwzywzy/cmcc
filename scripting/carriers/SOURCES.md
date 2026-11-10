@@ -19,3 +19,6 @@
 - 联通资源明细：resources[].details 的 feePolicyName/addUpItemName、use/total/remain，见 https://github.com/Nanako718/Scripting/blob/main/scripts/%E8%81%94%E9%80%9A/widget.tsx 。顶层 packageName 按可选字段处理；不推测套餐名称。
 - 电信 App 鉴权结构与只读查询：headerInfos.token 和 content.fieldData，见 https://github.com/Cp0204/ChinaTelecomMonitor/blob/main/telecom_class.py 。只重用用户自己抓取的完整只读请求，不实现其密码登录、加密、续登流程。
 - 旧电信网页路径的历史参考：https://github.com/anker1209/Scriptable/blob/main/scripts/ChinaTelecom_2024.js 。本次未登录实测旧页面跳转 https://e.dlife.cn/portal/web/index.html ；主脚本来自 https://static.e.189.cn/portal/web/assets/index-Bg9jNuid.js ，静态检查主文件未找到旧套餐/余额路径；未覆盖懒加载模块或登录后的网络，因此不宣称已适配新门户，也不向用户提供旧网页抓取规则。
+
+0.2.2 电信密码登录的协议与公钥参考用户提供的 ScriptingApp/Community-Scripts 的“电信小组件.scripting”内 util/telecom.ts：https://github.com/ScriptingApp/Community-Scripts/blob/main/%E7%94%B5%E4%BF%A1%E5%B0%8F%E7%BB%84%E4%BB%B6.scripting 。本仓库独立实现请求、Keychain 保存、错误处理及有限重登；修正原参考北京时间计算、语音已用/剩余显示和混合单位进度的问题，不复制其中密码存入 Storage 的行为。
+RSA 使用官方 npm jsencrypt 3.3.2 的 ESM 源码打包，来源 https://github.com/travist/jsencrypt ，MIT 许可证保留于 vendor/LICENSE-jsencrypt.txt；无运行时远程代码下载。用户截图是账号列表和详情界面的视觉依据，沿用原移动组件的原生列表、Page/Group/InfoRow。
