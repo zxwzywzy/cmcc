@@ -78,7 +78,7 @@ export function safeRequest(value) {
 
 // Fields from Nanako718/Scripting scripts/联通/widget.tsx; never copy its sample phone.
 export function normalizeUnicomCookie(fee,detail){
- const out={provider:'unicom',fetchedAt:Date.now()};
+ const out={provider:'unicom',unicomSchema:3,fetchedAt:Date.now()};
  if(fee?.code==='Y'){
   const resource=fee.feeResource,n=number(resource?.feePersent);
   if(n!==undefined&&resource?.newUnit==='元')out.balance=n;
@@ -93,8 +93,16 @@ export function normalizeUnicomCookie(fee,detail){
   const generalMB=number(general?.xcanusevalue);
   const remaining=generalMB!==undefined?generalMB:flow(f?.remainResource,detail.canuseFlowAllUnit);
   if(remaining!==undefined)out.flowMB=remaining;
+  const usedMB=generalMB!==undefined?number(general?.xusedvalue):flow(f?.userResource,detail.canuseFlowAllUnit);
+  if(usedMB!==undefined&&usedMB>=0){
+   out.flowUsedMB=usedMB;
+   if(remaining!==undefined&&remaining+usedMB>=0)out.flowTotalMB=remaining+usedMB;
+  }
   const voice=number(v?.remainResource);
-  if(voice!==undefined&&/^(分钟|分|min)$/i.test(String(detail.canuseVoiceAllUnit||'')))out.voice=voice;
+  if(voice!==undefined&&/^(分钟|分|min)$/i.test(String(detail.canuseVoiceAllUnit||''))){
+   out.voice=voice;const used=number(v?.userResource);
+   if(used!==undefined&&used>=0){out.voiceUsed=used;if(voice+used>=0)out.voiceTotal=voice+used;}
+  }
  }
  if(!['balance','flowMB','voice'].some(k=>Number.isFinite(out[k])))throw Error('联通 Cookie 查询未返回可识别余量');
  return out;

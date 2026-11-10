@@ -3,7 +3,7 @@ import { queryUnicomCookie } from './unicom-cookie'
 import { endpoint, normalize, safeRequest, names } from './normalizers.js'
 import { loadAccount as loadMobile, listAccounts as mobileAccounts, importFromBoxJS as importMobile, removeAccount as removeMobile, clearCache as clearMobileCache } from './mobile/api'
 export type Provider = 'cmcc' | 'unicom' | 'telecom' | 'broadnet'
-export type Metrics = {provider:Provider; balance?:number; flowMB?:number; voice?:number; fetchedAt:number}
+export type Metrics = {provider:Provider; balance?:number; flowMB?:number; voice?:number; flowUsedMB?:number; flowTotalMB?:number; voiceUsed?:number; voiceTotal?:number; unicomSchema?:number; fetchedAt:number}
 export type CarrierRecord = {metrics:Metrics;request:any;queryReady:boolean}
 export type CarrierState = {provider:Provider;metrics?:Metrics;message?:string;stale?:boolean}
 const UNICOM_COOKIE='carrier.hub.unicom.cookie.v1'
@@ -85,7 +85,7 @@ export async function loadProvider(p:Provider,force=false):Promise<CarrierState>
  if(p==='unicom'){
   const cookie=Keychain.get(UNICOM_COOKIE)
   if(cookie){
-   if(record&&!force&&record.metrics.flowMB!==undefined&&Date.now()-record.metrics.fetchedAt<300000)return {provider:p,metrics:record.metrics}
+   if(record&&!force&&record.metrics.unicomSchema===3&&Date.now()-record.metrics.fetchedAt<300000)return {provider:p,metrics:record.metrics}
    try{
     const metrics=await queryUnicomCookie(cookie);const saved=read();saved.unicom={metrics,request:null,queryReady:false};write(saved)
     return {provider:p,metrics}

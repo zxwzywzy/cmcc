@@ -17,13 +17,13 @@ const scripting={fetch:async(url,options)=>{
  if(offline)throw Error('synthetic offline');
  assert.equal(options.headers.Cookie,cookie);assert.equal(options.redirect,'error');
  if(url.includes('mobileserviceimportant')){assert.ok(url.includes('desmobiel=13000000000'));return {ok:true,json:async()=>({code:'Y',feeResource:{feePersent:'8.25',newUnit:'元'}})}}
- return {ok:true,json:async()=>({code:'0000',canuseFlowAllUnit:'GB',canuseVoiceAllUnit:'分钟',flowSumList:[{flowtype:'1',xcanusevalue:'2560'}],resources:[{type:'Voice',remainResource:'0'}]})};
+ return {ok:true,json:async()=>({code:'0000',canuseFlowAllUnit:'GB',canuseVoiceAllUnit:'分钟',flowSumList:[{flowtype:'1',xcanusevalue:'2560',xusedvalue:'7680'}],resources:[{type:'Voice',remainResource:'0',userResource:'60'}]})};
 }};
 const mobile={importFromBoxJS:async()=>{throw Error('none')},listAccounts:()=>[],loadAccount:async()=>{throw Error('none')},clearCache:()=>{},removeAccount:()=>{}};
 const m={exports:{}};vm.runInNewContext(compiled,{module:m,exports:m.exports,require:n=>n==='scripting'?scripting:mobile,Storage:{get:k=>prefs[k],set:(k,v)=>prefs[k]=v},Keychain:{get:k=>keys[k],set:(k,v)=>keys[k]=v,remove:k=>delete keys[k]},Date});
 (async()=>{
  const summary=await m.exports.importAll();assert.ok(summary.includes('联通 riskSync Cookie 已导入并查到数据'));
- let state=await m.exports.loadProvider('unicom');assert.equal(state.metrics.balance,8.25);assert.equal(state.metrics.flowMB,2560);assert.equal(state.metrics.voice,0);
+ let state=await m.exports.loadProvider('unicom');assert.equal(state.metrics.balance,8.25);assert.equal(state.metrics.flowMB,2560);assert.equal(state.metrics.voice,0);assert.equal(state.metrics.flowTotalMB,10240);assert.equal(state.metrics.voiceTotal,60);
  offline=true;state=await m.exports.loadProvider('unicom',true);assert.equal(state.stale,true);assert.equal(state.metrics.balance,8.25);
  cookie='u_account=13100000000; ecs_token=synthetic-other';await m.exports.importAll();state=await m.exports.loadProvider('unicom',true);assert.equal(state.metrics,undefined);
  m.exports.forget('unicom');assert.equal(keys['carrier.hub.unicom.cookie.v1'],undefined);

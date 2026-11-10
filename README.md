@@ -1,8 +1,8 @@
 # Paperclip Cookie · Quantumult X
 
-## 新增：四家运营商余量小组件（0.1.9 适配试用）
+## 新增：四家运营商余量小组件（0.1.10 适配试用）
 
-- [下载 Scripting 安装包](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/carriers-0.1.9.zip)
+- [下载 Scripting 安装包](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/carriers-0.1.10.zip)
 - [配套圈 X 抓取订阅](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/Carrier-Hub-Cookie-v0.1.8.conf)
 - [安装步骤与当前限制](scripting/carriers/README.md)
 
