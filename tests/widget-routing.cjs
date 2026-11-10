@@ -1,12 +1,12 @@
 const vm=require('node:vm'),assert=require('node:assert/strict'),esbuild=require('esbuild');
 const built=esbuild.buildSync({entryPoints:['scripting/carriers/widget.tsx'],bundle:true,format:'cjs',platform:'neutral',jsxFactory:'h',jsxFragment:'Fragment',external:['scripting','./hub','./mobile/styles/index','./mobile/settings','./mobile/slots','./app_intents'],write:false}).outputFiles[0].text;
-async function run(parameter,family="systemMedium",loaded=[]){
- const calls={legacy:[],providers:[],overview:0,present:0,tiles:[]};
+async function run(parameter,family="systemMedium",loaded=[],selection){
+ const calls={legacy:[],providers:[],overview:0,present:0,tiles:[],buttons:[]};
  const stubs={scripting:{Widget:{parameter,family,present:()=>calls.present++}},'./hub':{
   preferences:()=>({refresh:120}),loadAll:async()=>{calls.overview++;return ['cmcc','unicom','telecom','broadnet'].map(provider=>({provider,...(loaded.includes(provider)?{metrics:{balance:1}}:{})}))},
-  loadProvider:async provider=>{calls.providers.push(provider);return {provider}},providerNames:{},value:()=>'',flowValue:()=>'',timeValue:()=>''
- },'./mobile/styles/index':{parseParam:p=>{calls.legacy.push(p);return {style:p,accounts:[]}},resolveStyle:()=>({}),renderStyle:()=>({original:true})},'./mobile/settings':{getLook:()=>({})},'./mobile/slots':{loadSlots:async()=>[]},'./app_intents':{readPage:()=>0}};
- const m={exports:{}};vm.runInNewContext(built,{module:m,exports:m.exports,require:name=>stubs[name],h:(type,props)=>{if(props?.state)calls.tiles.push(props.state.provider);return {}},Fragment:'Fragment',Date,console});
+  loadProvider:async provider=>{calls.providers.push(provider);return {provider}},providerNames:{cmcc:'中国移动',unicom:'中国联通',telecom:'中国电信',broadnet:'中国广电'},value:()=>'',flowValue:()=>'',timeValue:()=>''
+ },'./mobile/styles/index':{parseParam:p=>{calls.legacy.push(p);return {style:p,accounts:[]}},resolveStyle:()=>({}),renderStyle:()=>({original:true})},'./mobile/settings':{getLook:()=>({})},'./mobile/slots':{loadSlots:async()=>[]},'./app_intents':{readPage:()=>0,readCarrier:()=>selection,CarrierSetIntent:({provider})=>{calls.buttons.push(provider);return {provider}}}};
+ const m={exports:{}};vm.runInNewContext(built,{module:m,exports:m.exports,require:name=>stubs[name],h:(type,props)=>{if(props?.state)calls.tiles.push(props.state.provider);if(typeof type==='function')return type(props);return {}},Fragment:'Fragment',Date,console});
  await new Promise(resolve=>setTimeout(resolve,10));assert.equal(calls.present,1);return calls;
 }
 (async()=>{
@@ -16,9 +16,11 @@ async function run(parameter,family="systemMedium",loaded=[]){
  for(const p of ['总览','合集','overview']){const c=await run(p);assert.equal(c.overview,1);assert.equal(c.legacy.length,0)}
  for(const [p,id] of [['联通','unicom'],['电信','telecom'],['广电','broadnet']]){const c=await run(p);assert.deepEqual(c.providers,[id]);assert.equal(c.legacy.length,0)}
  const medium=await run('总览','systemMedium',['cmcc','telecom','broadnet']);
- assert.deepEqual(medium.tiles,['cmcc','telecom','broadnet']);
+ assert.deepEqual(medium.tiles,['cmcc']);assert.deepEqual(medium.buttons,['cmcc','unicom','telecom','broadnet']);
+ const switched=await run('总览','systemMedium',['cmcc','telecom','broadnet'],'broadnet');assert.deepEqual(switched.tiles,['broadnet']);
+ const missing=await run('总览','systemMedium',['cmcc'],'telecom');assert.deepEqual(missing.tiles,['telecom']);assert.equal(missing.buttons.length,4);
  const large=await run('总览','systemLarge',['cmcc','telecom','broadnet']);
  for(const id of ['cmcc','telecom','broadnet'])assert.ok(large.tiles.includes(id));
  assert.equal(large.tiles.length,4);
- console.log('PASS 17 widget cases: legacy routing and three-carrier medium/large overview.');
+ console.log('PASS 19 widget cases: legacy routing, medium tabs, selected/missing carrier and large overview.');
 })().catch(e=>{console.error(e);process.exitCode=1});

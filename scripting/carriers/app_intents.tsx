@@ -41,3 +41,20 @@ export const PageSetIntent = AppIntentManager.register({
     Widget.reloadAll()
   },
 })
+
+// Separate from CMCC account paging so carrier switching never moves a phone tab.
+const CARRIER_KEY = 'carrier.hub.selected-provider.v1'
+const CARRIERS = ['cmcc', 'unicom', 'telecom', 'broadnet']
+export function readCarrier(): string | undefined {
+  const value = AppStorage.get<string>(CARRIER_KEY)
+  return value && CARRIERS.includes(value) ? value : undefined
+}
+export const CarrierSetIntent = AppIntentManager.register({
+  name: 'CarrierHubSelectProvider',
+  protocol: AppIntentProtocol.AppIntent,
+  perform: async ({ provider }: { provider: string }) => {
+    if (!CARRIERS.includes(provider)) return
+    AppStorage.set(CARRIER_KEY, provider)
+    Widget.reloadAll()
+  },
+})
