@@ -85,7 +85,7 @@ export async function loadProvider(p:Provider,force=false):Promise<CarrierState>
  if(p==='unicom'){
   const cookie=Keychain.get(UNICOM_COOKIE)
   if(cookie){
-   if(record&&!force&&Date.now()-record.metrics.fetchedAt<300000)return {provider:p,metrics:record.metrics}
+   if(record&&!force&&record.metrics.flowMB!==undefined&&Date.now()-record.metrics.fetchedAt<300000)return {provider:p,metrics:record.metrics}
    try{
     const metrics=await queryUnicomCookie(cookie);const saved=read();saved.unicom={metrics,request:null,queryReady:false};write(saved)
     return {provider:p,metrics}

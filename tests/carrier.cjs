@@ -2,7 +2,7 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
 const root='scripting/carriers/';
 const compiled=esbuild.buildSync({entryPoints:[root+'normalizers.js'],bundle:true,format:'cjs',write:false}).outputFiles[0].text;
 const moduleObject={exports:{}};vm.runInNewContext(compiled,{module:moduleObject,exports:moduleObject.exports,Date});
-const {normalize,endpoint,safeRequest}=moduleObject.exports;
+const {normalize,normalizeUnicomCookie,endpoint,safeRequest}=moduleObject.exports;
 let count=0;function test(name,fn){fn();count++;console.log('PASS '+name)}
 const broad={status:'000000',data:{userData:{fee:'-125',flow:1048576,voice:'0'}}};
 const telecom={responseData:{resultCode:'0000',data:{balanceInfo:{indexBalanceDataInfo:{balance:'12.34'}},flowInfo:{commonFlow:{balance:1048576}},voiceInfo:{voiceDataInfo:{balance:90}}}}};
@@ -31,4 +31,9 @@ test('nearby diagnostic excludes secrets and query',()=>{const {store}=run({...r
 test('HTTP status string accepted',()=>{const {store}=run(req,{status:'HTTP/1.1 200 OK',body:JSON.stringify(broad)});assert.equal(JSON.parse(store.carrier_hub_v1).accounts.broadnet.metrics.balance,-1.25)});
 test('non-success HTTP status recorded',()=>{const {store}=run(req,{statusCode:403,body:'{}'});assert.equal(JSON.parse(store.carrier_hub_diagnostics_v1).providers.broadnet.stage,'http-error');assert.equal(store.carrier_hub_v1,undefined)});
 test('unadapted response recorded separately',()=>{const {store}=run(req,{statusCode:200,body:'{"unexpected":true}'});assert.equal(JSON.parse(store.carrier_hub_diagnostics_v1).providers.broadnet.stage,'schema-mismatch');assert.equal(store.carrier_hub_v1,undefined)});
+test('unicom general flow list works without resources or global unit',()=>{const x=normalizeUnicomCookie(null,{code:'0000',flowSumList:[{flowtype:'1',xcanusevalue:'2048'}]});assert.equal(x.flowMB,2048)});
+test('unicom general flow takes priority over aggregate Flow',()=>{const x=normalizeUnicomCookie(null,{code:'0000',flowSumList:[{flowtype:1,xcanusevalue:'1024'}],resources:[{type:'Flow',remainResource:'99'}],canuseFlowAllUnit:'GB'});assert.equal(x.flowMB,1024)});
+test('unicom zero general flow does not fall back to aggregate',()=>{const x=normalizeUnicomCookie(null,{code:'Y',flowSumList:[{flowtype:'1',xcanusevalue:0}],resources:[{type:'Flow',remainResource:'99'}],canuseFlowAllUnit:'GB'});assert.equal(x.flowMB,0)});
+test('unicom absent general list retains known-unit fallback',()=>{const x=normalizeUnicomCookie(null,{code:'0000',resources:[{type:'Flow',remainResource:'1.5'}],canuseFlowAllUnit:'GB'});assert.equal(x.flowMB,1536)});
+test('unicom missing flow stays absent rather than zero',()=>{const x=normalizeUnicomCookie({code:'Y',feeResource:{feePersent:'2',newUnit:'元'}},{code:'0000',flowSumList:[{flowtype:'2',xcanusevalue:999}]});assert.equal(x.flowMB,undefined);assert.equal(x.balance,2)});
 console.log('Total passed:',count);

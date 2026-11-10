@@ -17,7 +17,7 @@ const scripting={fetch:async(url,options)=>{
  if(offline)throw Error('synthetic offline');
  assert.equal(options.headers.Cookie,cookie);assert.equal(options.redirect,'error');
  if(url.includes('mobileserviceimportant')){assert.ok(url.includes('desmobiel=13000000000'));return {ok:true,json:async()=>({code:'Y',feeResource:{feePersent:'8.25',newUnit:'元'}})}}
- return {ok:true,json:async()=>({code:'0000',canuseFlowAllUnit:'GB',canuseVoiceAllUnit:'分钟',resources:[{type:'Flow',remainResource:'2.5'},{type:'Voice',remainResource:'0'}]})};
+ return {ok:true,json:async()=>({code:'0000',canuseFlowAllUnit:'GB',canuseVoiceAllUnit:'分钟',flowSumList:[{flowtype:'1',xcanusevalue:'2560'}],resources:[{type:'Voice',remainResource:'0'}]})};
 }};
 const mobile={importFromBoxJS:async()=>{throw Error('none')},listAccounts:()=>[],loadAccount:async()=>{throw Error('none')},clearCache:()=>{},removeAccount:()=>{}};
 const m={exports:{}};vm.runInNewContext(compiled,{module:m,exports:m.exports,require:n=>n==='scripting'?scripting:mobile,Storage:{get:k=>prefs[k],set:(k,v)=>prefs[k]=v},Keychain:{get:k=>keys[k],set:(k,v)=>keys[k]=v,remove:k=>delete keys[k]},Date});

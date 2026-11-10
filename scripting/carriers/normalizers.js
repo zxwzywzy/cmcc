@@ -84,9 +84,14 @@ export function normalizeUnicomCookie(fee,detail){
   if(n!==undefined&&resource?.newUnit==='元')out.balance=n;
   if(n!==undefined&&resource?.newUnit==='分')out.balance=n/100;
  }
- if(['0000','Y'].includes(detail?.code)&&Array.isArray(detail.resources)){
-  const f=detail.resources.find(x=>x.type==='Flow'),v=detail.resources.find(x=>x.type==='Voice');
-  const remaining=flow(f?.remainResource,detail.canuseFlowAllUnit);
+ if(['0000','Y'].includes(detail?.code)){
+  const resources=Array.isArray(detail.resources)?detail.resources:[];
+  const f=resources.find(x=>x.type==='Flow'),v=resources.find(x=>x.type==='Voice');
+  // Nanako718's Unicom widget uses general flowtype=1 xcanusevalue in MB.
+  // This field can exist without a Flow entry or without canuseFlowAllUnit.
+  const general=Array.isArray(detail.flowSumList)?detail.flowSumList.find(x=>String(x.flowtype).trim()==='1'):undefined;
+  const generalMB=number(general?.xcanusevalue);
+  const remaining=generalMB!==undefined?generalMB:flow(f?.remainResource,detail.canuseFlowAllUnit);
   if(remaining!==undefined)out.flowMB=remaining;
   const voice=number(v?.remainResource);
   if(voice!==undefined&&/^(分钟|分|min)$/i.test(String(detail.canuseVoiceAllUnit||'')))out.voice=voice;
