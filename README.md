@@ -1,12 +1,14 @@
 # Paperclip Cookie · Quantumult X
 
-## 新增：四家运营商余量小组件（0.2.2 电信登录与账号界面）
+## 新增：四家运营商余量小组件（0.2.3 电信短信验证码登录）
 
-- [下载 Scripting 安装包](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/carriers-0.2.2.zip)
+- [下载 Scripting 安装包](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/carriers-0.2.3.zip)
 - [配套圈 X 抓取订阅](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/Carrier-Hub-Cookie-v0.2.1.conf)
 - [安装步骤与当前限制](scripting/carriers/README.md)
 
-0.2.2 新增电信手机号密码直接登录，凭据仅存本机 Keychain，保留圈 X 导入方式。账号页采用简洁卡片列表，点进去查看套餐与账户、备注、登录方式和样式设置；其他运营商不再在列表中展开大段样式设置。
+0.2.3 电信登录新增短信验证码入口：手动拼图 → 明确点击发送验证码 → 输入6位验证码 → 登录并保存。验证码只在本次内存使用，Token 存本机 Keychain；失效后需重新验证码登录，不自动发短信。需要支持 UIImage.getPixelData 的 Scripting（3.2.1 或更新）。真实登录待设备验证。
+
+历史更新：0.2.2 新增电信手机号密码直接登录，凭据仅存本机 Keychain，保留圈 X 导入方式。账号页采用简洁卡片列表，点进去查看套餐与账户、备注、登录方式和样式设置；其他运营商不再在列表中展开大段样式设置。
 
 历史更新：0.2.1 删除重复“运营商”底栏，将四家概览、导入、样式与移动号码详情统一到“账号”。联通按成功响应增加可用积分、套餐名称、短信和套餐资源明细；部分接口不返回这些字段时不猜测。电信修正诊断规则与正文规则重叠，并支持只抓到 Token 鉴权请求后导入尝试查询。真机抓取与在线查询仍需确认。
 

@@ -5,15 +5,15 @@ import type { Metrics } from './hub'
 const KEY='carrier.hub.telecom.login.v1'
 const LOGIN='https://appgologin.189.cn:9031/login/client/userLoginNormal'
 const QUERY='https://appfuwu.189.cn:9021/query/qryImportantData'
-type Credentials={phone:string;password:string;deviceID:string;token?:string;provinceCode?:string;cityCode?:string}
+type Credentials={phone:string;password?:string;deviceID:string;mode?:'password'|'sms';token?:string;provinceCode?:string;cityCode?:string}
 const PUB=`-----BEGIN PUBLIC KEY-----
 MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDBkLT15ThVgz6/NOl6s8GNPofd
 WzWbCkWnkaAm7O2LjkM1H7dMvzkiqdxU02jamGRHLX/ZNMCXHnPcW/sDhiFCBN18
 qFvy8g6VYb9QtroI09e176s+ZCtiv7hbin2cCTj99iUpnEloZm19lwHyo69u5UMi
 PMpq0/XKBO8lYhN/gwIDAQAB
 -----END PUBLIC KEY-----`
-function read():Credentials|undefined{try{const c=JSON.parse(Keychain.get(KEY)||'null');return c&&/^1\d{10}$/.test(c.phone)&&typeof c.password==='string'?c:undefined}catch{return undefined}}
-export function telecomLoginInfo(){const c=read();return c?{phoneTail:c.phone.slice(-4)}:undefined}
+function read():Credentials|undefined{try{const c=JSON.parse(Keychain.get(KEY)||'null');return c&&/^1\d{10}$/.test(c.phone)&&(typeof c.password==='string'||(c.mode==='sms'&&typeof c.token==='string'))?c:undefined}catch{return undefined}}
+export function telecomLoginInfo(){const c=read();return c?{phoneTail:c.phone.slice(-4),mode:c.mode||'password'}:undefined}
 export function telecomAccountMatches(phone:string){return read()?.phone===phone.trim()}
 export function removeTelecomLogin(){Keychain.remove(KEY)}
 export function beijingTimestamp(time=Date.now()){
@@ -27,6 +27,7 @@ async function post(url:string,body:any){
  catch{throw Error('电信网络请求失败，请稍后重试')}
 }
 async function login(c:Credentials):Promise<Credentials>{
+ if(!c.password)throw Error('短信登录已过期，请重新获取验证码登录')
  const h=header(c,'userLoginNormal'),uuid=String(Math.floor(Math.random()*9e15+1e15))
  const rsa=new JSEncrypt();rsa.setPublicKey(PUB)
  const encrypted=rsa.encrypt(`iPhone 14 15.4.0${c.deviceID||uuid.slice(0,12)}${c.phone}${h.timestamp}${c.password}0$$$0.`)
@@ -54,6 +55,7 @@ export async function queryTelecomLogin():Promise<Metrics>{
   if(!c.token)current=await login(c)
   response=await query(current)
   if(response?.responseData?.resultCode!=='0000'){
+   if(c.mode==='sms')throw Error('短信登录已过期，请重新获取验证码登录')
    // At most one re-login, only after an actual server failure; network errors do not trigger it.
    current=await login(c);response=await query(current)
   }
@@ -62,4 +64,11 @@ export async function queryTelecomLogin():Promise<Metrics>{
   Keychain.set(KEY,JSON.stringify(current));return m
  })()
  try{return await pending}finally{pending=undefined}
+}
+
+export async function saveTelecomSmsSession(c:{phone:string;token:string;deviceID:string;provinceCode?:string;cityCode?:string}){
+ if(!/^1\d{10}$/.test(c.phone)||!c.token)throw Error('电信短信会话无效')
+ const credentials:Credentials={phone:c.phone,token:c.token,deviceID:c.deviceID,provinceCode:c.provinceCode,cityCode:c.cityCode,mode:'sms'}
+ const m=metrics(credentials,await query(credentials))
+ Keychain.set(KEY,JSON.stringify(credentials));return m
 }

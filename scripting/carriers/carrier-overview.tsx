@@ -1,8 +1,9 @@
-import { Button, HStack, Image, List, Navigation, NavigationLink, Picker, ProgressView, SecureField, Section, Spacer, Text, TextField, VStack, Widget, useEffect, useState } from 'scripting'
-import { loadAll, loadProvider, importAll, forget, providerNames, providerIds, preferences, savePreferences, value, flowValue, timeValue, getCarrierStyle, setCarrierStyle, getComparePartner, setComparePartner, carrierStyles, accountTitle, carrierNote, setCarrierNote, loginTelecomAccount, telecomLoginInfo, type CarrierStyle, type CarrierState, type Provider } from './hub'
+import { Button, HStack, Image, List, Navigation, NavigationLink, Picker, ProgressView, SecureField, Slider, UIImage, ZStack, Section, Spacer, Text, TextField, VStack, Widget, useEffect, useState } from 'scripting'
+import { loadAll, loadProvider, importAll, forget, providerNames, providerIds, preferences, savePreferences, value, flowValue, timeValue, getCarrierStyle, setCarrierStyle, getComparePartner, setComparePartner, carrierStyles, accountTitle, carrierNote, setCarrierNote, loginTelecomAccount, loginTelecomSmsAccount, telecomLoginInfo, type CarrierStyle, type CarrierState, type Provider } from './hub'
 import { CarrierLayout } from './carrier-layout'
 import { familyNames, usage, type CarrierFamily } from './carrier-design'
 import { nextCarrier, selectCarrier } from './app_intents'
+import { TelecomSms, pieceBounds } from './telecom-sms'
 import { Page, Group, InfoRow, ActionRow, NavRow } from './mobile/kit'
 
 export function CarrierOverview({mobileAccounts,close,onImported}:{mobileAccounts?:any;close?:any;onImported?:()=>Promise<void>}={}){
@@ -74,7 +75,7 @@ function CarrierAccountDetail({initial,states,changed}:{initial:CarrierState;sta
   <Group title="备注"><ActionRow icon="pencil" title="备注" value={carrierNote(p)||'未设置'} action={renamed}/></Group>
   <Group title="小组件"><NavRow icon="square.grid.2x2" title="大、中、小号样式" destination={<CarrierStyleSettings provider={p} states={states.map(s=>s.provider===p?state:s)}/>}/></Group>
   {p==='telecom'?<Group title="登录方式" note="密码登录只向电信官方接口发送请求，凭据保存在本机 Keychain。抓取方式仍可用；要切回抓取，请先移除此账号后从 BoxJS 导入。">
-   <InfoRow icon="person.crop.circle" title="当前方式" value={telecomLoginInfo()?'账号密码登录':'圈 X 抓取'}/>
+   <InfoRow icon="person.crop.circle" title="当前方式" value={telecomLoginInfo()?.mode==='sms'?'短信验证码登录':telecomLoginInfo()?'账号密码登录':'圈 X 抓取'}/>
    <NavRow icon="key" title={telecomLoginInfo()?'修改登录账号':'设置账号密码登录'} destination={<TelecomLoginForm saved={async()=>{setState(await loadProvider(p));await changed()}}/>}/>
   </Group>:null}
   <Group title="更新" note={note||'未返回的数据不填示例值。'}><ActionRow icon="arrow.clockwise" title={busy?'刷新中…':'刷新查询'} disabled={busy} action={refresh}/><ActionRow icon="trash" title="移除此账号" destructive action={remove}/></Group>
@@ -89,6 +90,7 @@ export function TelecomLoginForm({saved}:{saved:()=>Promise<void>}){
    <TextField title="手机号" value={phone} onChanged={setPhone}/>
    <SecureField title="登录密码" value={password} onChanged={setPassword}/>
    <TextField title="设备 ID（可选）" value={device} onChanged={setDevice}/>
+   <NavigationLink destination={<TelecomSmsForm saved={saved}/>}><Text>改用短信验证码登录</Text></NavigationLink>
   </Section>
   <Section footer={<Text>{message||'登录并查询成功后才替换已保存的电信账号。遇到安全验证请在官方 App 完成，不会反复重试。'}</Text>}><Button title={busy?'登录中…':'登录并保存'} disabled={busy} action={submit}/>{busy?<ProgressView/>:null}</Section>
  </List>
@@ -119,4 +121,47 @@ function CarrierStylePreview({provider,family,states}:{provider:Provider;family:
 
 function ResourceDetails({state}:{state:CarrierState}){
  return <List navigationTitle="套餐资源明细">{state.metrics?.resourceDetails?.map(item=><Section header={<Text>{item.name}</Text>}><Text>{item.kind} · {item.unit||'单位未返回'}</Text><HStack><Text>剩余</Text><Spacer/><Text>{item.remaining??'—'}</Text></HStack><HStack><Text>已用</Text><Spacer/><Text>{item.used??'—'}</Text></HStack><HStack><Text>总量</Text><Spacer/><Text>{item.total??'—'}</Text></HStack></Section>)}<Text font="caption" foregroundStyle="secondaryLabel">按接口原始单位展示；资源包可能重叠，不将明细直接相加。</Text></List>
+}
+
+export function TelecomSmsForm({saved}:{saved:()=>Promise<void>}){
+ const dismiss=Navigation.useDismiss()
+ const [phone,setPhone]=useState(''),[code,setCode]=useState(''),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[session,setSession]=useState<TelecomSms|undefined>(undefined)
+ const [captcha,setCaptcha]=useState<any>(undefined),[distance,setDistance]=useState(0),[sent,setSent]=useState(false),[nextSend,setNextSend]=useState(0),[tick,setTick]=useState(0)
+ const [drag]=useState({start:0,end:0,track:[] as string[]})
+ useEffect(()=>{if(!nextSend)return;const id=setInterval(()=>setTick(Date.now()),1000);return ()=>clearInterval(id)},[nextSend])
+ function changePhone(p:string){setPhone(p);setSession(undefined);setCaptcha(undefined);setSent(false);setCode('');drag.start=0;drag.end=0;drag.track=[]}
+ async function challenge(){
+  setBusy(true);setMessage('正在获取拼图…');setCaptcha(undefined);setSession(undefined);setSent(false);setCode('');drag.start=0;drag.end=0;drag.track=[];setDistance(0)
+  try{
+   const current=new TelecomSms(phone),data=await current.challenge()
+   const image=(v:string)=>UIImage.fromBase64String(v.replace(/^data:image\/(?:png|jpeg);base64,/,''))
+   const background=image(data.background),piece=image(data.piece)
+   if(!background||!piece)throw Error('电信拼图图片无法读取')
+   if(typeof piece.getPixelData!=='function')throw Error('请升级 Scripting 至支持 UIImage.getPixelData 的版本（3.2.1 或更新）')
+   const pixels=piece.getPixelData();if(!pixels)throw Error('拼图像素无法读取')
+   const bounds=pieceBounds(pixels.data.toUint8Array(),pixels.width,pixels.height)
+   if(background.width<=bounds.width||background.width>2000||background.height>2000)throw Error('拼图尺寸未适配')
+   const width=280,scale=width/background.width
+   setCaptcha({background,piece,width,height:background.height*scale,pieceWidth:piece.width*scale,pieceHeight:piece.height*scale,travel:background.width-bounds.width,left:bounds.left,scale})
+   setSession(current);setMessage('手动拖动下方滑块，让拼图对齐缺口，再点发送验证码。')
+  }catch(e){setMessage((e as Error).message)}finally{setBusy(false)}
+ }
+ function moved(v:number){setDistance(v);if(!drag.start)drag.start=Date.now();drag.end=Date.now();if(drag.track.length<1500)drag.track.push(`${v.toFixed(3)}#0.000#${drag.end}`)}
+ async function send(){
+  if(!session)return;setBusy(true)
+  try{await session.send({distance,track:drag.track.join('%'),start:drag.start,end:drag.end});setSent(true);setCaptcha(undefined);setNextSend(Date.now()+60000);setMessage('短信发送请求已获确认，请输入收到的6位验证码。')}
+  catch(e){setMessage((e as Error).message);setNextSend(Date.now()+60000)}finally{setBusy(false)}
+ }
+ async function submit(){
+  if(!session)return;setBusy(true)
+  try{await loginTelecomSmsAccount(session,code);setCode('');setSession(undefined);await saved();Widget.reloadAll();dismiss()}
+  catch(e){setCode('');setMessage((e as Error).message)}finally{setBusy(false)}
+ }
+ const wait=Math.max(0,Math.ceil((nextSend-Date.now())/1000))
+ return <List navigationTitle="电信验证码登录">
+  <Section header={<Text>手机号</Text>} footer={<Text>先手动完成拼图验证，再发送短信。验证码仅用于本次登录，不保存。短信会话失效后需重新验证。</Text>}><TextField title="电信手机号" value={phone} onChanged={changePhone} disabled={busy}/><Button title={captcha?'重新获取拼图':'获取拼图'} disabled={busy||wait>0} action={challenge}/></Section>
+  {captcha?<Section header={<Text>手动拼图验证</Text>}><ZStack alignment="topLeading" frame={{width:captcha.width,height:captcha.height}} clipShape={{type:'rect'}}><Image image={captcha.background} resizable frame={{width:captcha.width,height:captcha.height}}/><Image image={captcha.piece} resizable frame={{width:captcha.pieceWidth,height:captcha.pieceHeight}} offset={{x:(distance*captcha.travel-captcha.left)*captcha.scale,y:0}}/></ZStack><Slider min={0} max={1} step={0.001} value={distance} onChanged={moved} disabled={busy} label={<Text>拖动以对齐拼图</Text>}/><Button title={wait?`${wait}秒后可重试`:'发送验证码'} disabled={busy||wait>0||drag.track.length<2} action={send}/></Section>:null}
+  {sent?<Section header={<Text>短信验证码</Text>}><SecureField title="6位验证码" value={code} onChanged={setCode} disabled={busy}/><Button title="登录并保存" disabled={busy||!/^\d{6}$/.test(code)} action={submit}/></Section>:null}
+  <Section footer={<Text>{message}</Text>}>{busy?<ProgressView/>:<Text>凭据保存在本机 Keychain</Text>}</Section>
+ </List>
 }

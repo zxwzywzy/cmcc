@@ -18,6 +18,7 @@ const m={exports:{}};vm.runInNewContext(code,{module:m,exports:m.exports,require
  mode='expire-once';let before=loginCount;r=await a.queryTelecomLogin();assert.equal(loginCount,before+1);assert.equal(r.voice,240);
  mode='network';before=loginCount;await assert.rejects(a.queryTelecomLogin(),e=>!e.message.includes('SyntheticPwd!'));assert.equal(loginCount,before);
  mode='reject';before=loginCount;await assert.rejects(a.queryTelecomLogin());assert.equal(loginCount,before+1);
+ mode='ok';r=await a.saveTelecomSmsSession({phone:'13000000000',token:'sms-session-token',deviceID:'device'});assert.equal(a.telecomLoginInfo().mode,'sms');assert.ok(!keys['carrier.hub.telecom.login.v1'].includes('SyntheticPwd!'));mode='reject';before=loginCount;await assert.rejects(a.queryTelecomLogin());assert.equal(loginCount,before);
  a.removeTelecomLogin();assert.equal(a.telecomLoginInfo(),undefined);assert.equal(keys['carrier.hub.telecom.login.v1'],undefined);
  console.log('PASS Telecom password login: real RSA encryption without browser globals, UTC+8 timestamp, derived remaining/totals, Keychain-only persistence, failed replacement isolation, bounded re-login and secret-free errors.');
 })().catch(e=>{console.error(e);process.exitCode=1});

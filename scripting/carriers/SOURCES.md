@@ -22,3 +22,6 @@
 
 0.2.2 电信密码登录的协议与公钥参考用户提供的 ScriptingApp/Community-Scripts 的“电信小组件.scripting”内 util/telecom.ts：https://github.com/ScriptingApp/Community-Scripts/blob/main/%E7%94%B5%E4%BF%A1%E5%B0%8F%E7%BB%84%E4%BB%B6.scripting 。本仓库独立实现请求、Keychain 保存、错误处理及有限重登；修正原参考北京时间计算、语音已用/剩余显示和混合单位进度的问题，不复制其中密码存入 Storage 的行为。
 RSA 使用官方 npm jsencrypt 3.3.2 的 ESM 源码打包，来源 https://github.com/travist/jsencrypt ，MIT 许可证保留于 vendor/LICENSE-jsencrypt.txt；无运行时远程代码下载。用户截图是账号列表和详情界面的视觉依据，沿用原移动组件的原生列表、Page/Group/InfoRow。
+
+0.2.3 短信登录协议参考：https://github.com/margrop/telecom-phone-device-id-tools/blob/main/tools/telecom_auth/telecom.py 及 static/app.js 。本仓库独立实现原生手动拼图 UI、签名后单次发送、loginType=2 请求、内存会话、Keychain Token 保存；不包含服务密码设备信任验证步骤。透明边界计算仅用于显示对齐，轨迹来自用户操作。
+对称加密和 MD5 使用官方 npm crypto-js 4.2.0，本地打包，许可证见 vendor/LICENSE-crypto-js.txt；协议需要 AES-ECB/PKCS7 和 MD5 标识，不对外提供通用加密接口。Scripting UIImage.getPixelData/Image/Slider API 依据 https://scriptingapp.github.io/guide/Utilities/UIImage 和 https://scriptingapp.github.io/guide/Changelog/2.4.8/Slider/ 。

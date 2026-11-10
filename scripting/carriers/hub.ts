@@ -1,5 +1,5 @@
 import { fetch } from 'scripting'
-import { configureTelecomLogin, queryTelecomLogin, telecomLoginInfo, telecomAccountMatches, removeTelecomLogin } from './telecom-login'
+import { saveTelecomSmsSession, configureTelecomLogin, queryTelecomLogin, telecomLoginInfo, telecomAccountMatches, removeTelecomLogin } from './telecom-login'
 import { CARRIER_STYLE_NAMES, resolveCarrierStyle, rememberUsage, clearUsage, type SharedCarrierStyle, type CarrierFamily } from './carrier-design'
 import { queryUnicomCookie } from './unicom-cookie'
 import { queryTelecomRequest, telecomRequest, telecomIdentity } from './telecom-cookie'
@@ -117,7 +117,7 @@ export async function loadProvider(p:Provider,force=false):Promise<CarrierState>
  if(p==='telecom'&&telecomLoginInfo()){
   if(record&&!force&&record.metrics.telecomSchema===3&&Date.now()-record.metrics.fetchedAt<300000)return {provider:p,metrics:record.metrics}
   try{const metrics=await queryTelecomLogin();const saved=read();saved.telecom={metrics,request:null,queryReady:false};write(saved);return {provider:p,metrics}}
-  catch{return {provider:p,metrics:record?.metrics,stale:!!record,message:'电信登录或查询失败，请检查网络、密码，或在官方 App 完成安全验证'}}
+  catch{return {provider:p,metrics:record?.metrics,stale:!!record,message:telecomLoginInfo()?.mode==='sms'?'电信短信会话查询失败；请检查网络，若会话已过期请重新验证码登录':'电信登录或查询失败，请检查网络、密码，或在官方 App 完成安全验证'}}
  }
  if(p==='telecom'&&Keychain.get(TELECOM_COOKIE)){
   if(record&&!force&&record.metrics.telecomSchema===2&&Date.now()-record.metrics.fetchedAt<300000)return {provider:p,metrics:record.metrics}
@@ -181,3 +181,11 @@ const NOTES='carrier.hub.account.notes.v1'
 export function carrierNote(p:Provider):string{try{return JSON.parse(store.get<string>(NOTES)||'{}')[p]||''}catch{return ''}}
 export function setCarrierNote(p:Provider,note:string){let saved:any={};try{saved=JSON.parse(store.get<string>(NOTES)||'{}')}catch{};store.set(NOTES,JSON.stringify({...saved,[p]:note.trim().slice(0,40)}))}
 export function accountTitle(s:CarrierState){return carrierNote(s.provider)||(s.metrics?.phoneTail?'尾号 '+s.metrics.phoneTail:providerNames[s.provider])}
+
+export async function loginTelecomSmsAccount(session:{submit:(code:string)=>Promise<any>},code:string){
+ const credentials=await session.submit(code),sameAccount=telecomAccountMatches(credentials.phone)
+ const metrics=await saveTelecomSmsSession(credentials)
+ if(!sameAccount)clearUsage('telecom')
+ Keychain.remove(TELECOM_COOKIE)
+ const saved=read();saved.telecom={metrics,request:null,queryReady:false};write(saved);return metrics
+}
