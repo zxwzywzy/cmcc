@@ -348,4 +348,3 @@ export function MonthStyle(props: { ctx: Ctx }) {
     </Root>
   )
 }
-
