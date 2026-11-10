@@ -1,16 +1,17 @@
 {
-  "name": "Wusheng Bus Setup",
-  "version": "0.0.3",
-  "description": "武胜公交接口准备工具，尚未接入实时到站、余额或乘车码",
+  "name": "Wusheng Bus",
+  "version": "0.1.0",
+  "description": "武胜公交到站与公交卡余额小组件；动态乘车码仍在微信中使用",
   "author": {
     "name": "zxwzywzy"
   },
   "entry": "index.tsx",
   "icon": "bus.fill",
   "color": "rgba(0,110,91,1)",
-  "runInApp": true,
+  "runInApp": false,
   "localizedNames": {
-    "zh": "武胜公交·接口准备"
+    "zh": "武胜公交",
+    "en": "Wusheng Bus"
   },
-  "remoteResource": "https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus-0.0.3.zip"
+  "remoteResource": "https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus-0.1.0.zip"
 }

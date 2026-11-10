@@ -1,5 +1,12 @@
 # Paperclip Cookie · Quantumult X
 
+## 新增：武胜公交 Scripting 小组件（0.1.0 试用版）
+
+[下载安装包](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus-0.1.0.zip) · [安装说明与验证范围](scripting/wusheng-bus/README.md)
+
+支持小、中、大尺寸，选择线路和候车站，读取实时车辆位置及公交卡余额。参数留空；个人账号须单独加密导入，安装包不含登录凭据。乘车码仍在微信小程序使用；iPhone 原生显示待验证。
+
+
 ## 新增：四家运营商余量小组件（0.2.3 电信短信验证码登录）
 
 - [下载 Scripting 安装包](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/carriers-0.2.3.zip)
