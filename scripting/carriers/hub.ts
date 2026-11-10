@@ -1,10 +1,12 @@
 import { fetch } from 'scripting'
+import { queryUnicomCookie } from './unicom-cookie'
 import { endpoint, normalize, safeRequest, names } from './normalizers.js'
 import { loadAccount as loadMobile, listAccounts as mobileAccounts, importFromBoxJS as importMobile, removeAccount as removeMobile, clearCache as clearMobileCache } from './mobile/api'
 export type Provider = 'cmcc' | 'unicom' | 'telecom' | 'broadnet'
 export type Metrics = {provider:Provider; balance?:number; flowMB?:number; voice?:number; fetchedAt:number}
 export type CarrierRecord = {metrics:Metrics;request:any;queryReady:boolean}
 export type CarrierState = {provider:Provider;metrics?:Metrics;message?:string;stale?:boolean}
+const UNICOM_COOKIE='carrier.hub.unicom.cookie.v1'
 const CREDENTIALS='carrier.hub.credentials.v1'
 const SETTINGS='carrier.hub.settings.v1'
 const store=Storage as unknown as {get<T>(k:string):T|null;set(k:string,v:unknown):void}
@@ -19,7 +21,7 @@ export function savePreferences(host:string,refresh:number){
 }
 function read():Partial<Record<Provider,CarrierRecord>> {try{return JSON.parse(Keychain.get(CREDENTIALS)||'{}')}catch{return {}}}
 function write(v:Partial<Record<Provider,CarrierRecord>>){Keychain.set(CREDENTIALS,JSON.stringify(v))}
-export function forget(p:Provider){if(p==='cmcc'){for(const tel of mobileAccounts())removeMobile(tel)}else{const x=read();delete x[p];write(x)}}
+export function forget(p:Provider){if(p==='cmcc'){for(const tel of mobileAccounts())removeMobile(tel)}else{const x=read();delete x[p];write(x);if(p==='unicom')Keychain.remove(UNICOM_COOKIE)}}
 function validMetrics(p:Provider,m:any):m is Metrics {
  return m&&m.provider===p&&typeof m.fetchedAt==='number'&&Number.isFinite(m.fetchedAt)&&['balance','flowMB','voice'].some(k=>typeof m[k]==='number'&&Number.isFinite(m[k]))
 }
@@ -36,6 +38,7 @@ export async function importAll(hostOverride?:string):Promise<string>{
   if(raw.version!==1||!raw.accounts)throw Error('没有新抓取的数据')
   const records=read();const imported: string[]=[]
   for(const p of ['unicom','telecom','broadnet'] as Provider[]){
+   if(p==='unicom'&&Keychain.get(UNICOM_COOKIE))continue
    const r=raw.accounts[p];if(!r||!validMetrics(p,r.metrics))continue
    const request=safeRequest(r.request)
    if(request&&endpoint(request.url)!==p)continue
@@ -43,8 +46,21 @@ export async function importAll(hostOverride?:string):Promise<string>{
   }
   if(!imported.length)throw Error('没有可导入的数据')
   write(records);otherMessage=`已导入：${imported.join('、')}`
- }catch{otherMessage='联通／电信／广电未导入：请确认 BoxJS 可用，并用配套订阅重新抓取查询响应'}
- let diagnostics=''
+ }catch{otherMessage='原查询快照未导入：请确认 BoxJS 可用，并用配套订阅重新抓取查询响应'}
+ let cookieMessage=''
+ try{
+  const r=await fetch(`https://${host}/query/data/10010.cookie`)
+  const data=r.ok?await r.json() as {val?:unknown}:{}
+  const cookie=typeof data.val==='string'?data.val.trim():''
+  if(cookie&&cookie.length<=32768&&!/[\r\n]/.test(cookie)){
+   const previous=Keychain.get(UNICOM_COOKIE)
+   if(previous!==cookie){const records=read();delete records.unicom;write(records)}
+   Keychain.set(UNICOM_COOKIE,cookie)
+   const result=await loadProvider('unicom',true)
+   cookieMessage=result.metrics&&!result.stale?'联通 riskSync Cookie 已导入并查到数据':'联通 riskSync Cookie 已导入；余量查询尚未成功'
+  }
+ }catch{}
+ let diagnostics='' 
  try{
   const res=await fetch(`https://${host}/query/data/carrier_hub_diagnostics_v1`)
   if(res.ok){
@@ -57,7 +73,7 @@ export async function importAll(hostOverride?:string):Promise<string>{
    if(rows.length)diagnostics='\n抓取诊断：\n'+rows.join('\n')
   }
  }catch{}
- return mobileMessage+'；'+otherMessage+diagnostics
+ return mobileMessage+'；'+otherMessage+(cookieMessage?'\n'+cookieMessage:'')+diagnostics
 }
 export async function loadProvider(p:Provider,force=false):Promise<CarrierState>{
  if(p==='cmcc'){
@@ -66,6 +82,16 @@ export async function loadProvider(p:Provider,force=false):Promise<CarrierState>
   catch{return {provider:p,message:'请抓取移动登录凭据，再从 BoxJS 导入'}}
  }
  const all=read(),record=all[p]
+ if(p==='unicom'){
+  const cookie=Keychain.get(UNICOM_COOKIE)
+  if(cookie){
+   if(record&&!force&&Date.now()-record.metrics.fetchedAt<300000)return {provider:p,metrics:record.metrics}
+   try{
+    const metrics=await queryUnicomCookie(cookie);const saved=read();saved.unicom={metrics,request:null,queryReady:false};write(saved)
+    return {provider:p,metrics}
+   }catch{return {provider:p,metrics:record?.metrics,stale:!!record,message:'联通 Cookie 已导入，但查询失败；请重新抓取或检查接口兼容性'}}
+  }
+ }
  if(!record)return {provider:p,message:'尚未导入，请开启抓取后刷新官方 App'}
  if(!record.queryReady)return {provider:p,metrics:record.metrics,stale:true,message:'查询快照：刷新官方 App 后重新导入以更新'}
  if(!force&&Date.now()-record.metrics.fetchedAt<300000)return {provider:p,metrics:record.metrics}

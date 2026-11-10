@@ -15,7 +15,7 @@
 
 ## 可用范围和限制
 
-这是 0.1.7 适配试用版，不是四家都已真机验证的成品。已完成解析、存储、导入与查询代码；运营商版本和证书固定可能影响抓取。联通/电信依据公开实现编写，广电 App 的路径与返回仍需验证。只有广电小程序有公开字段参考。
+这是 0.1.8 适配试用版，不是四家都已真机验证的成品。已完成解析、存储、导入与查询代码；运营商版本和证书固定可能影响抓取。联通/电信依据公开实现编写，广电 App 的路径与返回仍需验证。只有广电小程序有公开字段参考。
 
 移动使用原查询/续登逻辑。联通、电信、广电仅重放已抓到的白名单只读查询请求；不自动登录或续期。签名、时间戳或登录会话失效时需重新抓取并导入。缺少正文或关联不到请求时保留快照，在界面标记并显示抓取时间，不伪装为实时数据。不添加签到功能。
 
@@ -100,3 +100,16 @@ https://raw.githubusercontent.com/zxwzywzy/cmcc/main/Carrier-Hub-Cookie-v0.1.7.c
 请求范围诊断仅观察已知业务查询路径族，保存不含 URL 参数的脱敏路径、阶段、HTTP 状态和时间；不保存该诊断请求的 Cookie、头或正文，不上传。BoxJS 导入结果会显示诊断阶段。已有精确匹配的抓取仍按此前逻辑保留查询凭据在本地。
 
 若完全没有提示，仍不能判断是域名/路径不匹配、未经过 MITM、通知被关闭或证书限制。此时需要用户提供圈 X 中脱敏的请求域名和路径/诊断截图；不要发送 Cookie、Token、登录链接或完整抓包。本版没有宣称修复电信/广电在线兼容性，需实际请求证据才能继续适配。
+
+## 0.1.8：加入用户提供的联通 riskSync Cookie 规则
+
+联通新增请求匹配 `/mobileserviceNine/v1/riskCollection/riskSync`，按用户提供规则的约定保存为 `10010.cookie`。来源：DTZSGHNR / Nanako718，https://raw.githubusercontent.com/Nanako718/Scripting/refs/heads/main/Quantumult%20X/10010_cookie.conf 。本仓库按相同匹配/键约定独立实现圈 X 抓取脚本，检查保存结果，只调用一次完成回调，不把 Cookie 写进日志和通知。
+
+已合并进 Carrier-Hub-Cookie.conf、此前的 v0.1.7 链接和 Paperclip Cookie 总合集。为避免旧缓存，推荐新链接：
+https://raw.githubusercontent.com/zxwzywzy/cmcc/main/Carrier-Hub-Cookie-v0.1.8.conf
+
+开启新版抓取订阅，重开已登录的中国联通 App 并刷新首页，触发 riskSync 后收到“Cookie 已保存”。运行本组件“从 BoxJS 导入”，会读取 `10010.cookie` 保存到本机 Keychain，并尝试查询余额和套餐余量。仅升级组件而没有更新抓取规则，仍不会新增 riskSync 捕获。
+
+查询参考同一上游的 `scripts/联通/widget.tsx`，使用 mobileserviceimportant/home/queryUserInfoSeven 和 queryOcsPackageFlowLeftContentRevisedInJune 的只读接口。没有照搬上游示例里写死的号码：只在 Cookie 中有本人的 u_account/c_mobile 时携带其号码，否则不附带号码参数。未知单位或错误响应不转成零。
+
+提示分开显示“Cookie 已导入”和“查到数据/查询尚未成功”。Cookie 保存成功不等于已通过在线查询；本地模拟流程通过，仍待用户真机验证。没有联通 Cookie 时仍可保留旧查询快照作为辅助。Cookie 变化会清理旧联通缓存，避免新账号显示上一个账号的数据。删除联通数据也会移除本组件 Keychain 中的联通 Cookie，不删除圈 X 原始记录。

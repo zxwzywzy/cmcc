@@ -5,13 +5,14 @@ let envelope={val:JSON.stringify({version:1,accounts:{broadnet:{metrics:{provide
 let mode='ok';
 const scripting={fetch:async(url,opts)=>{
  calls.push([url,opts]);
+ if(url.includes('/query/data/10010.cookie'))return {ok:true,json:async()=>({val:''})};
  if(url.includes('carrier_hub_diagnostics_v1'))return {ok:true,json:async()=>({val:JSON.stringify({providers:{telecom:{stage:'nearby-query'}}})})};
  if(url.includes('/query/data/'))return {ok:true,json:async()=>envelope};
  if(mode==='error')throw Error('synthetic offline');
  return {ok:true,json:async()=>({status:'000000',data:{userData:{fee:250,flow:2097152,voice:10}}})};
 }};
 const mobile={importFromBoxJS:async()=>['synthetic'],loadAccount:async()=>{throw Error('no mobile')},listAccounts:()=>[],removeAccount:()=>{},clearCache:()=>{}};
-const m={exports:{}};const context={module:m,exports:m.exports,require:name=>name==='scripting'?scripting:mobile,Storage:{get:k=>store[k],set:(k,v)=>store[k]=v},Keychain:{get:k=>keychain[k],set:(k,v)=>keychain[k]=v},Date};vm.runInNewContext(source,context);
+const m={exports:{}};const context={module:m,exports:m.exports,require:name=>name==='scripting'?scripting:mobile,Storage:{get:k=>store[k],set:(k,v)=>store[k]=v},Keychain:{get:k=>keychain[k],set:(k,v)=>keychain[k]=v,remove:k=>delete keychain[k]},Date};vm.runInNewContext(source,context);
 (async()=>{
  const hub=m.exports;
  assert.equal(hub.getCarrierStyle('telecom'),'全景');

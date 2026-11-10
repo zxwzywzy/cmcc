@@ -75,3 +75,22 @@ export function safeRequest(value) {
  Object.keys(value.headers||{}).forEach(k=>{ if(allowed.includes(k.toLowerCase())&&typeof value.headers[k]==='string')headers[k]=value.headers[k]; });
  return {url:value.url,method,headers,...(method==='POST'?{body}:{} )};
 }
+
+// Fields from Nanako718/Scripting scripts/联通/widget.tsx; never copy its sample phone.
+export function normalizeUnicomCookie(fee,detail){
+ const out={provider:'unicom',fetchedAt:Date.now()};
+ if(fee?.code==='Y'){
+  const resource=fee.feeResource,n=number(resource?.feePersent);
+  if(n!==undefined&&resource?.newUnit==='元')out.balance=n;
+  if(n!==undefined&&resource?.newUnit==='分')out.balance=n/100;
+ }
+ if(['0000','Y'].includes(detail?.code)&&Array.isArray(detail.resources)){
+  const f=detail.resources.find(x=>x.type==='Flow'),v=detail.resources.find(x=>x.type==='Voice');
+  const remaining=flow(f?.remainResource,detail.canuseFlowAllUnit);
+  if(remaining!==undefined)out.flowMB=remaining;
+  const voice=number(v?.remainResource);
+  if(voice!==undefined&&/^(分钟|分|min)$/i.test(String(detail.canuseVoiceAllUnit||'')))out.voice=voice;
+ }
+ if(!['balance','flowMB','voice'].some(k=>Number.isFinite(out[k])))throw Error('联通 Cookie 查询未返回可识别余量');
+ return out;
+}

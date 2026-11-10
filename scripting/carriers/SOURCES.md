@@ -9,3 +9,5 @@
 只有移动沿用已有续登逻辑。另三家不执行密码登录、不发送验证码、不续登、不签到；保存官方查询请求后按白名单原地址重查，失败则展示明确标记的旧数据。请求阶段与响应阶段关联失败时只保存已解析的快照，不猜测查询正文。
 
 新解析器和抓取桥接均为本次编写，未将任何账户凭据写进源代码。模拟用例只使用合成数据。不宣称已完成运营商或 iOS 真机验证。
+
+新增联通来源（用户指定）：https://github.com/Nanako718/Scripting/blob/main/Quantumult%20X/10010_cookie.conf 及其 js/10010_cookie.js 的 URL/存储键约定；查询字段参考 https://github.com/Nanako718/Scripting/blob/main/scripts/联通/widget.tsx 。仅依据接口结构独立实现适配，未复制其固定示例手机号。
