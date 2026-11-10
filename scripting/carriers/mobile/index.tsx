@@ -43,7 +43,7 @@ import { STYLES, MULTI, NEEDS_HIST, stylesFor, styleById, paramOf, renderStyle, 
 import { loadSlots, sampleSlots, cachedSlots } from './slots'
 import { installUpdate } from './update'
 import { CarrierOverview } from '../carrier-overview'
-import { importAll, importedProviders, providerIds, loadProvider, type Provider, type CarrierState } from '../hub'
+import { importAll, importedProviders, providerIds, loadProvider, loadAll, getCarrierStyle, type Provider, type CarrierState } from '../hub'
 import { readCarrier, nextCarrier, selectCarrier } from '../app_intents'
 
 declare const Safari: { openURL(url: string): Promise<boolean> }
@@ -92,15 +92,16 @@ function Preview(props: { style: StyleDef; family: Family; slots: Slot[]; look?:
   const switchable=props.style.id==='W'&&props.family==='systemMedium'
   const [carrier,setCarrier]=useState<Provider>((readCarrier()||'cmcc') as Provider)
   const [state,setState]=useState<CarrierState|undefined>(undefined)
+  const [carrierStates,setCarrierStates]=useState<CarrierState[]>([])
   useEffect(()=>{
     let active=true
     if(!switchable||carrier==='cmcc')setState(undefined)
-    else {setState({provider:carrier,message:'读取中…'});loadProvider(carrier).then(value=>{if(active)setState(value)})}
+    else {setState({provider:carrier,message:'读取中…'});loadProvider(carrier).then(value=>{if(active)setState(value)});if(['双号对照','双号全景'].includes(getCarrierStyle(carrier,props.family as any)))loadAll().then(value=>{if(active)setCarrierStates(value)});else setCarrierStates([])}
     return ()=>{active=false}
   },[carrier,switchable])
   const cycle=()=>{const next=nextCarrier(carrier,providerIds) as Provider;selectCarrier(next);setCarrier(next)}
   const view = renderStyle(props.style, props.family, { inApp: true, slots: slotsFor(props.style, props.slots), look: props.look ?? getLook(), page: 0,
-    carrier:switchable?state:undefined,carrierSwitch:switchable,onCarrierChange:cycle })
+    carrier:switchable?state:undefined,carrierStates,carrierSwitch:switchable,onCarrierChange:cycle })
   const room = props.family.startsWith('system') ? 12 : 0
   return (
     <ZStack frame={{ width: box.width * k, height: (box.height + room) * k }}>

@@ -11,3 +11,5 @@
 新解析器和抓取桥接均为本次编写，未将任何账户凭据写进源代码。模拟用例只使用合成数据。不宣称已完成运营商或 iOS 真机验证。
 
 新增联通来源（用户指定）：https://github.com/Nanako718/Scripting/blob/main/Quantumult%20X/10010_cookie.conf 及其 js/10010_cookie.js 的 URL/存储键约定；查询字段参考 https://github.com/Nanako718/Scripting/blob/main/scripts/联通/widget.tsx 。仅依据接口结构独立实现适配，未复制其固定示例手机号。
+
+0.2.0 共享布局为本仓库独立适配，参照用户提供的移动全景视觉结构，并复用保留来源的 Root、Num、Bar 等基础组件。品牌区分使用系统符号和独立配色，不新增官方 Logo 素材。

@@ -19,6 +19,7 @@ const m={exports:{}};const context={module:m,exports:m.exports,require:name=>nam
  const credentialsBefore=JSON.stringify(keychain);
  hub.setCarrierStyle('telecom','账单卡');hub.setCarrierStyle('unicom','大字余额');
  assert.equal(hub.getCarrierStyle('telecom'),'账单卡');assert.equal(hub.getCarrierStyle('unicom'),'大字余额');assert.equal(hub.getCarrierStyle('broadnet'),'全景');
+ hub.setCarrierStyle('telecom','大字余额','systemSmall');hub.setCarrierStyle('telecom','用量月报','systemLarge');assert.equal(hub.getCarrierStyle('telecom','systemSmall'),'大字余额');assert.equal(hub.getCarrierStyle('telecom','systemLarge'),'用量月报');assert.equal(hub.getCarrierStyle('telecom','systemMedium'),'账单卡');hub.setComparePartner('telecom','broadnet','systemMedium');assert.equal(hub.getComparePartner('telecom','systemMedium'),'broadnet');assert.equal(hub.getComparePartner('telecom','systemSmall'),undefined);assert.throws(()=>hub.setComparePartner('telecom','telecom'));
  assert.throws(()=>hub.setCarrierStyle('telecom','unknown'));assert.equal(JSON.stringify(keychain),credentialsBefore);
 
  assert.throws(()=>hub.savePreferences('evil.test',120));

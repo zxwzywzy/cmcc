@@ -56,7 +56,9 @@ export function normalize(provider,json) {
   out.balance=number(d.balanceInfo?.indexBalanceDataInfo?.balance);
   const n=number(d.flowInfo?.commonFlow?.balance);
   if(n!==undefined)out.flowMB=n/1024; // commonFlow is KB, excludes directional data
+  const used=number(d.flowInfo?.commonFlow?.used);if(used!==undefined&&used>=0){out.flowUsedMB=used/1024;if(n!==undefined&&n+used>=0)out.flowTotalMB=(n+used)/1024;}
   out.voice=number(d.voiceInfo?.voiceDataInfo?.balance);
+  const voiceUsed=number(d.voiceInfo?.voiceDataInfo?.used);if(voiceUsed!==undefined&&voiceUsed>=0){out.voiceUsed=voiceUsed;if(out.voice!==undefined&&out.voice+voiceUsed>=0)out.voiceTotal=out.voice+voiceUsed;}
  } else throw Error('未知运营商');
  if(!['balance','flowMB','voice'].some(k=>Number.isFinite(out[k])))throw Error('未识别出可显示的余额或余量，未保存');
  for(const key of ['balance','flowMB','voice'])if(!Number.isFinite(out[key]))delete out[key];

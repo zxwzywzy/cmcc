@@ -1,5 +1,5 @@
 const vm=require('node:vm'),assert=require('node:assert/strict'),esbuild=require('esbuild');
-const code=esbuild.buildSync({entryPoints:['scripting/carriers/other-carrier-board.tsx'],bundle:true,format:'cjs',platform:'neutral',jsxFactory:'h',external:['scripting','./mobile/ui','./carrier-title','./carrier-content','./hub'],write:false}).outputFiles[0].text;
+const code=esbuild.buildSync({entryPoints:['scripting/carriers/carrier-meters.tsx'],bundle:true,format:'cjs',platform:'neutral',jsxFactory:'h',external:['scripting','./mobile/ui','./carrier-title','./carrier-content','./hub'],write:false}).outputFiles[0].text;
 const m={exports:{}};vm.runInNewContext(code,{module:m,exports:m.exports,h:(type,props,...children)=>({type,props,children}),require:n=>n==='scripting'?{HStack:'HStack',VStack:'VStack',Text:'Text',Spacer:'Spacer'}:n==='./mobile/ui'?{Root:'Root',Num:'Num',Bar:'Bar',RED:{}}:n==='./hub'?{flowValue:n=>n===undefined?'—':`${n/1024} GB`}:{} });
 function all(node,type){if(!node||typeof node!=='object')return [];return [...(node.type===type?[node]:[]),...(node.children||[]).flat(Infinity).flatMap(x=>all(x,type))]}
 const ctx={th:{t1:'label',t2:'secondaryLabel',t3:'secondaryLabel'}};

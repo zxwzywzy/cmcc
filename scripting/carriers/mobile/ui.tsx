@@ -108,6 +108,7 @@ export type Ctx = {
   inApp: boolean        // App 内预览: 不用 widgetBackground, 按钮不触发
   slots: Slot[]         // 单号样式只用第一个; 双号 / 多号样式用全部
   carrier?: CarrierState
+  carrierStates?: CarrierState[]
   carrierSwitch?: boolean
   onCarrierChange?: () => void
   page: number          // 多号翻页当前页

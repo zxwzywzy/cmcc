@@ -85,7 +85,7 @@ export function resolveStyle(name: string, family: Family, accounts = 0): StyleD
   return def?.views[family] ? def : styleById(BUILTIN_DEFAULTS[family])!
 }
 
-export function renderStyle(style: StyleDef, family: Family, opts: { inApp: boolean; slots: Slot[]; look: Look; page: number; carrier?:CarrierState; carrierSwitch?:boolean; onCarrierChange?:()=>void }) {
+export function renderStyle(style: StyleDef, family: Family, opts: { inApp: boolean; slots: Slot[]; look: Look; page: number; carrier?:CarrierState; carrierStates?:CarrierState[]; carrierSwitch?:boolean; onCarrierChange?:()=>void }) {
   const ctx: Ctx = {
     th: makeTheme(opts.look),
     size: (family === 'systemSmall' ? 's' : family === 'systemMedium' ? 'm' : 'l') as Size,
@@ -94,6 +94,7 @@ export function renderStyle(style: StyleDef, family: Family, opts: { inApp: bool
     slots: opts.slots,
     page: opts.page,
     carrier:opts.carrier,
+    carrierStates:opts.carrierStates,
     carrierSwitch:opts.carrierSwitch??style.id==='W',
     onCarrierChange:opts.onCarrierChange,
   }

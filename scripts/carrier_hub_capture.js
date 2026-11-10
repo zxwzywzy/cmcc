@@ -62,7 +62,17 @@
       out.balance = number(d.balanceInfo?.indexBalanceDataInfo?.balance);
       const n = number(d.flowInfo?.commonFlow?.balance);
       if (n !== void 0) out.flowMB = n / 1024;
+      const used = number(d.flowInfo?.commonFlow?.used);
+      if (used !== void 0 && used >= 0) {
+        out.flowUsedMB = used / 1024;
+        if (n !== void 0 && n + used >= 0) out.flowTotalMB = (n + used) / 1024;
+      }
       out.voice = number(d.voiceInfo?.voiceDataInfo?.balance);
+      const voiceUsed = number(d.voiceInfo?.voiceDataInfo?.used);
+      if (voiceUsed !== void 0 && voiceUsed >= 0) {
+        out.voiceUsed = voiceUsed;
+        if (out.voice !== void 0 && out.voice + voiceUsed >= 0) out.voiceTotal = out.voice + voiceUsed;
+      }
     } else throw Error("\u672A\u77E5\u8FD0\u8425\u5546");
     if (!["balance", "flowMB", "voice"].some((k) => Number.isFinite(out[k]))) throw Error("\u672A\u8BC6\u522B\u51FA\u53EF\u663E\u793A\u7684\u4F59\u989D\u6216\u4F59\u91CF\uFF0C\u672A\u4FDD\u5B58");
     for (const key of ["balance", "flowMB", "voice"]) if (!Number.isFinite(out[key])) delete out[key];

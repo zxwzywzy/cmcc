@@ -1,4 +1,5 @@
 import { fetch } from 'scripting'
+import { CARRIER_STYLE_NAMES, resolveCarrierStyle, rememberUsage, clearUsage, type SharedCarrierStyle, type CarrierFamily } from './carrier-design'
 import { queryUnicomCookie } from './unicom-cookie'
 import { endpoint, normalize, safeRequest, names } from './normalizers.js'
 import { loadAccount as loadMobile, listAccounts as mobileAccounts, importFromBoxJS as importMobile, removeAccount as removeMobile, clearCache as clearMobileCache } from './mobile/api'
@@ -20,8 +21,8 @@ export function savePreferences(host:string,refresh:number){
  store.set(SETTINGS,JSON.stringify({host:host.trim(),refresh:[30,60,120,240].includes(refresh)?refresh:120}))
 }
 function read():Partial<Record<Provider,CarrierRecord>> {try{return JSON.parse(Keychain.get(CREDENTIALS)||'{}')}catch{return {}}}
-function write(v:Partial<Record<Provider,CarrierRecord>>){Keychain.set(CREDENTIALS,JSON.stringify(v))}
-export function forget(p:Provider){if(p==='cmcc'){for(const tel of mobileAccounts())removeMobile(tel)}else{const x=read();delete x[p];write(x);if(p==='unicom')Keychain.remove(UNICOM_COOKIE)}}
+function write(v:Partial<Record<Provider,CarrierRecord>>){Keychain.set(CREDENTIALS,JSON.stringify(v));for(const record of Object.values(v)){if(record?.metrics)rememberUsage(record.metrics)}}
+export function forget(p:Provider){clearUsage(p);if(p==='cmcc'){for(const tel of mobileAccounts())removeMobile(tel)}else{const x=read();delete x[p];write(x);if(p==='unicom')Keychain.remove(UNICOM_COOKIE)}}
 function validMetrics(p:Provider,m:any):m is Metrics {
  return m&&m.provider===p&&typeof m.fetchedAt==='number'&&Number.isFinite(m.fetchedAt)&&['balance','flowMB','voice'].some(k=>typeof m[k]==='number'&&Number.isFinite(m[k]))
 }
@@ -54,7 +55,7 @@ export async function importAll(hostOverride?:string):Promise<string>{
   const cookie=typeof data.val==='string'?data.val.trim():''
   if(cookie&&cookie.length<=32768&&!/[\r\n]/.test(cookie)){
    const previous=Keychain.get(UNICOM_COOKIE)
-   if(previous!==cookie){const records=read();delete records.unicom;write(records)}
+   if(previous!==cookie){clearUsage('unicom');const records=read();delete records.unicom;write(records)}
    Keychain.set(UNICOM_COOKIE,cookie)
    const result=await loadProvider('unicom',true)
    cookieMessage=result.metrics&&!result.stale?'联通 riskSync Cookie 已导入并查到数据':'联通 riskSync Cookie 已导入；余量查询尚未成功'
@@ -78,7 +79,7 @@ export async function importAll(hostOverride?:string):Promise<string>{
 export async function loadProvider(p:Provider,force=false):Promise<CarrierState>{
  if(p==='cmcc'){
   if(force)clearMobileCache()
-  try{const a=await loadMobile();return {provider:p,metrics:{provider:p,balance:a.balance,flowMB:a.general?.remainMB,voice:a.voice?.remain,fetchedAt:a.fetchedAt},stale:a.stale}}
+  try{const a=await loadMobile();const metrics:Metrics={provider:p,balance:a.balance,flowMB:a.general?.remainMB,flowTotalMB:a.general?.totalMB,flowUsedMB:a.general?.usedMB,voice:a.voice?.remain,voiceTotal:a.voice?.total,voiceUsed:a.voice?.used,fetchedAt:a.fetchedAt};rememberUsage(metrics);return {provider:p,metrics,stale:a.stale}}
   catch{return {provider:p,message:'请抓取移动登录凭据，再从 BoxJS 导入'}}
  }
  const all=read(),record=all[p]
@@ -110,16 +111,25 @@ export function value(n:number|undefined,unit:string){return typeof n==='number'
 export function flowValue(n:number|undefined){return n===undefined?'—':Math.abs(n)>=1024?value(n/1024,'GB'):value(n,'MB')}
 export function timeValue(n:number|undefined){return n?new Date(n).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'尚无数据'}
 
-export const carrierStyles = ['全景', '账单卡', '大字余额'] as const
-export type CarrierStyle = typeof carrierStyles[number]
+export const carrierStyles=CARRIER_STYLE_NAMES
+export type CarrierStyle=SharedCarrierStyle
 const STYLE_KEY='carrier.hub.styles.v1'
-export function getCarrierStyle(provider:Provider):CarrierStyle {
- try{const saved=JSON.parse(store.get<string>(STYLE_KEY)||'{}')[provider];return carrierStyles.includes(saved)?saved:'全景'}catch{return '全景'}
+export function getCarrierStyle(provider:Provider,family:CarrierFamily='systemMedium'):CarrierStyle {
+ try{const saved=JSON.parse(store.get<string>(STYLE_KEY)||'{}');const style=resolveCarrierStyle(saved[provider+':'+family]??saved[provider]);return style==='四家总览'&&family!=='systemLarge'?'全景':style}catch{return '全景'}
 }
-export function setCarrierStyle(provider:Provider,style:CarrierStyle){
- if(!providerIds.includes(provider)||!carrierStyles.includes(style))throw Error('不支持的运营商样式')
+export function setCarrierStyle(provider:Provider,style:CarrierStyle,family:CarrierFamily='systemMedium'){
+ if(!providerIds.includes(provider)||!carrierStyles.includes(style)||(style==='四家总览'&&family!=='systemLarge'))throw Error('不支持的运营商样式')
  let saved:Record<string,string>={};try{saved=JSON.parse(store.get<string>(STYLE_KEY)||'{}')}catch{}
- store.set(STYLE_KEY,JSON.stringify({...saved,[provider]:style}))
+ store.set(STYLE_KEY,JSON.stringify({...saved,[provider+':'+family]:style}))
+}
+
+export function getComparePartner(provider:Provider,family:CarrierFamily='systemMedium'):Provider|undefined{
+ try{const value=JSON.parse(store.get<string>(STYLE_KEY)||'{}')[provider+':'+family+':partner'];return providerIds.includes(value)&&value!==provider?value:undefined}catch{return undefined}
+}
+export function setComparePartner(provider:Provider,partner:Provider,family:CarrierFamily='systemMedium'){
+ if(!providerIds.includes(partner)||partner===provider)throw Error('请选择另一家运营商')
+ let saved:Record<string,string>={};try{saved=JSON.parse(store.get<string>(STYLE_KEY)||'{}')}catch{}
+ store.set(STYLE_KEY,JSON.stringify({...saved,[provider+':'+family+':partner']:partner}))
 }
 
 export function importedProviders():Provider[]{

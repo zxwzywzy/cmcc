@@ -1,10 +1,10 @@
 {
   "name": "carrier-balance-widget",
   "private": true,
-  "version": "0.1.10",
+  "version": "0.2.0",
   "scripts": {
     "build": "node tools/build.cjs",
-    "test": "node tests/carrier.cjs && node tests/hub.cjs && node tests/widget-routing.cjs && node tests/carrier-intent.cjs && node tests/carrier-title.cjs && node tests/unicom-risksync.cjs && node tests/panorama-progress.cjs"
+    "test": "node tests/carrier.cjs && node tests/hub.cjs && node tests/widget-routing.cjs && node tests/carrier-intent.cjs && node tests/carrier-title.cjs && node tests/unicom-risksync.cjs && node tests/panorama-progress.cjs && node tests/carrier-layout-matrix.cjs && node tests/carrier-history.cjs"
   },
   "devDependencies": {
     "esbuild": "0.28.2"
