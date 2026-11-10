@@ -1,12 +1,12 @@
 # Paperclip Cookie · Quantumult X
 
-## 新增：四家运营商余量小组件（0.1.1 试用）
+## 新增：四家运营商余量小组件（0.1.2 试用）
 
 - [下载 Scripting 安装包](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/carriers.zip)
 - [配套圈 X 抓取订阅](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/Carrier-Hub-Cookie.conf)
 - [安装步骤与当前限制](scripting/carriers/README.md)
 
-0.1.1 已恢复原样式库、外观和默认参数；移动沿用原查询和 12 种样式，四家概览改用“总览”参数；联通、电信、广电新增统一余量视图、BoxJS 导入及白名单查询请求重用。新增三家均待真机验证，广电 App 接口仍属待验证适配；不承诺安装即可查询成功。只有快照时明确标记为旧数据，不包含自动签到。
+0.1.2 统一四家导入入口并修复中号显示数量；已恢复原样式库、外观和默认参数；移动沿用原查询和 12 种样式，四家概览改用“总览”参数；联通、电信、广电新增统一余量视图、BoxJS 导入及白名单查询请求重用。新增三家均待真机验证，广电 App 接口仍属待验证适配；不承诺安装即可查询成功。只有快照时明确标记为旧数据，不包含自动签到。
 
 
 由用户提供的 Loon Cookie 插件转换，原脚本作者及版权归 MaYIHEI 和各原作者所有。原项目：https://github.com/MaYIHEI/paperclip 。源码头部、来源 URL 和上游许可证均保留。

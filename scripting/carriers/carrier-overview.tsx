@@ -38,7 +38,7 @@ export function CarrierOverview(){
    <TextField title="BoxJS 域名" value={host} onChanged={setHost}/>
   </Section>
   <Section header={<Text>桌面小组件</Text>} footer={<Text>联通、电信、广电为适配试用版，尚未完成真机验证。广电 App 路径和返回结构仍需验证；不支持自动续登或签到。</Text>}>
-   <Text>添加 Scripting 小组件，选择“运营商余量”。参数填：移动、联通、电信、广电；大号留空显示四家，中号留空显示已导入的前两家。</Text>
+   <Text>添加 Scripting 小组件，选择“运营商余量”，参数填“总览”。大号显示四家导入状态，中号显示已导入的运营商。单独查看可填“联通”“电信”“广电”。</Text>
    <Text>移动可用“移动 全景 1234”等参数，保留原组件的 12 种样式与多账号能力。其他三家目前各保留最近一次抓取的账号。</Text>
   </Section>
  </List></NavigationStack>

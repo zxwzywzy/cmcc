@@ -23,8 +23,9 @@ export function forget(p:Provider){if(p==='cmcc'){for(const tel of mobileAccount
 function validMetrics(p:Provider,m:any):m is Metrics {
  return m&&m.provider===p&&typeof m.fetchedAt==='number'&&Number.isFinite(m.fetchedAt)&&['balance','flowMB','voice'].some(k=>typeof m[k]==='number'&&Number.isFinite(m[k]))
 }
-export async function importAll():Promise<string>{
- const host=preferences().host
+export async function importAll(hostOverride?:string):Promise<string>{
+ const host=hostOverride?.trim()||preferences().host
+ if(!/^(?:boxjs\.com|boxjs\.net)$/.test(host))throw Error("请选择 boxjs.com 或 boxjs.net")
  let mobileMessage='',otherMessage=''
  try{const ids=await importMobile(host);mobileMessage=`移动 ${ids.length} 个账号`}catch{mobileMessage='移动未导入（未抓取或 BoxJS 不可达）'}
  try{
@@ -33,16 +34,16 @@ export async function importAll():Promise<string>{
   const envelope=await res.json() as {val?:string}
   const raw=JSON.parse(envelope.val||'{}')
   if(raw.version!==1||!raw.accounts)throw Error('没有新抓取的数据')
-  const records=read();let count=0
+  const records=read();const imported: string[]=[]
   for(const p of ['unicom','telecom','broadnet'] as Provider[]){
    const r=raw.accounts[p];if(!r||!validMetrics(p,r.metrics))continue
    const request=safeRequest(r.request)
    if(request&&endpoint(request.url)!==p)continue
-   records[p]={metrics:r.metrics,request,queryReady:!!request&&(request.method==='GET'||!!request.body)};count++
+   records[p]={metrics:r.metrics,request,queryReady:!!request&&(request.method==='GET'||!!request.body)};imported.push(providerNames[p])
   }
-  if(!count)throw Error('没有可导入的数据')
-  write(records);otherMessage=`联通／电信／广电导入 ${count} 项`
- }catch{otherMessage='其他运营商未导入，请先打开对应 App 抓取查询数据'}
+  if(!imported.length)throw Error('没有可导入的数据')
+  write(records);otherMessage=`已导入：${imported.join('、')}`
+ }catch{otherMessage='联通／电信／广电未导入：请确认 BoxJS 可用，并用配套订阅重新抓取查询响应'}
  return mobileMessage+'；'+otherMessage
 }
 export async function loadProvider(p:Provider,force=false):Promise<CarrierState>{

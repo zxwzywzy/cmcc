@@ -33,7 +33,10 @@ async function main(){
  }
  let view
  if(family==='systemLarge'&&!selected)view=<VStack spacing={8}><HStack spacing={8}><Tile state={ordered[0]} compact/><Tile state={ordered[1]} compact/></HStack><HStack spacing={8}><Tile state={ordered[2]} compact/><Tile state={ordered[3]} compact/></HStack></VStack>
- else if(family==='systemMedium'&&!selected)view=<HStack spacing={8}><Tile state={ordered[0]}/><Tile state={ordered[1]}/></HStack>
+ else if(family==='systemMedium'&&!selected){
+  const visible=loaded.length?loaded:ordered.slice(0,2)
+  view=<HStack spacing={6}>{visible.map(state=><Tile state={state} compact={visible.length>2}/>)}</HStack>
+ }
  else view=<Tile state={ordered[0]}/>
  Widget.present(<VStack padding={8} background="systemGroupedBackground">{view}</VStack>,{policy:'after',date:new Date(Date.now()+preferences().refresh*60000)})
 }

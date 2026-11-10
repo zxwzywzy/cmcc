@@ -14,8 +14,11 @@ const m={exports:{}};const context={module:m,exports:m.exports,require:name=>nam
 (async()=>{
  const hub=m.exports;
  assert.throws(()=>hub.savePreferences('evil.test',120));
- await hub.importAll();let s=await hub.loadProvider('broadnet',true);assert.equal(s.metrics.balance,2.5);assert.equal(s.metrics.flowMB,2048);assert.equal(s.stale,undefined);assert.equal(calls.at(-1)[1].redirect,'error');
+ const raw=JSON.parse(envelope.val);for(const p of ['unicom','telecom'])raw.accounts[p]={metrics:{provider:p,balance:3,flowMB:512,fetchedAt:1},request:null,queryReady:false};envelope={val:JSON.stringify(raw)};
+ const summary=await hub.importAll();for(const p of ['中国联通','中国电信','中国广电'])assert.ok(summary.includes(p));
+ for(const p of ['unicom','telecom']){const state=await hub.loadProvider(p);assert.equal(state.metrics.balance,3);assert.equal(state.stale,true);}
+ let s=await hub.loadProvider('broadnet',true);assert.equal(s.metrics.balance,2.5);assert.equal(s.metrics.flowMB,2048);assert.equal(s.stale,undefined);assert.equal(calls.at(-1)[1].redirect,'error');
  mode='error';s=await hub.loadProvider('broadnet',true);assert.equal(s.stale,true);assert.equal(s.metrics.balance,2.5);
  hub.forget('broadnet');s=await hub.loadProvider('broadnet');assert.equal(s.metrics,undefined);
- console.log('Hub integration passed: host validation, import, live-query normalization, redirect policy, offline fallback, delete.');
+ console.log('Hub integration passed: host validation, import, live-query normalization, redirect policy, offline fallback, delete, three-carrier import and named import results.');
 })().catch(e=>{console.error(e);process.exitCode=1});

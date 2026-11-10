@@ -43,6 +43,7 @@ import { STYLES, MULTI, NEEDS_HIST, stylesFor, styleById, paramOf, renderStyle, 
 import { loadSlots, sampleSlots, cachedSlots } from './slots'
 import { installUpdate } from './update'
 import { CarrierOverview } from '../carrier-overview'
+import { importAll } from '../hub'
 
 declare const Safari: { openURL(url: string): Promise<boolean> }
 
@@ -483,8 +484,7 @@ function AccountsTab(props: Shared & { close: any }) {
     setBusy(true)
     setNote('从 BoxJS 导入...')
     try {
-      const tels = await importFromBoxJS(host)
-      setNote(`已导入 ${tels.length} 个号`)
+      setNote(await importAll(host))
       await props.reload()
     } catch (e) {
       setNote(errorWords(e))
@@ -515,7 +515,7 @@ function AccountsTab(props: Shared & { close: any }) {
       toolbar={{ cancellationAction: props.close }}
     >
       {props.slots.length ? (
-        <Section footer={<Text>长按拖动调整顺序, 左滑删除。全景和多号翻页按这个顺序切换; 小组件参数里写了尾号的, 以参数为准。</Text>}>
+        <Section footer={<Text>此列表为移动账号；其他运营商在“运营商”页查看。长按可调整移动号码顺序。</Text>}>
           <ForEach
             count={props.slots.length}
             itemBuilder={(i: number) => {
@@ -529,7 +529,7 @@ function AccountsTab(props: Shared & { close: any }) {
       ) : null}
       <Section
         header={<Text>导入</Text>}
-        footer={<Text>{note || '1) 圈 X 装好 paperclip 中国移动插件和 BoxJS\n2) 划掉中国移动 App 再重开, 收到「获取成功」通知; 多个号用 App 的「切换账号」各抓一次\n3) 保持 圈 X 开启, 点「从 BoxJS 导入」, 插件里存的号一次全部导入'}</Text>}
+        footer={<Text>{note || '四家共用此导入按钮：先开启配套抓取订阅和 BoxJS，分别刷新各运营商 App，再点导入。结果会列出成功导入的运营商；未抓到的数据不会自动生成。'}</Text>}
       >
         <Button title="从 BoxJS 导入" systemImage="square.and.arrow.down" disabled={busy} action={doImport} />
       </Section>
@@ -605,14 +605,14 @@ function SettingsTab(props: Shared & { close: any }) {
   async function checkUpdate() {
     setUpdateText('检查中...')
     try {
-      const res = await fetch(REMOTE_META)
+      const res = await fetch(REMOTE_META + "?t=" + Date.now())
       const remote = String((await res.json() as { version?: string }).version ?? '')
       if (!remote || !isNewer(remote, version)) return setUpdateText('已是最新')
       setUpdateText(`有新版本 ${remote}`)
       const ok = await Dialog.confirm({ title: `发现新版本 ${remote}`, message: `当前 ${version}, 账号和历史都会保留`, cancelLabel: '稍后', confirmLabel: '更新' })
       if (!ok) return
       setUpdateText('更新中...')
-      await installUpdate(PACKAGE_URL)
+      await installUpdate(PACKAGE_URL + "?v=" + encodeURIComponent(remote))
       Widget.reloadAll()
       await Dialog.alert({ title: `已更新到 ${remote}`, message: '点确定退出, 重新打开 cmcc 生效' })
       Script.exit()
