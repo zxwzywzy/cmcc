@@ -1,4 +1,4 @@
-# 武胜公交 · 接口准备 0.0.2
+# 武胜公交 · 接口准备 0.0.3
 
 这是开发准备工具，尚未接通实时到站、卡余额或乘车码。独立于运营商组件，不替换现有脚本。
 
@@ -20,3 +20,9 @@
 
 已预填 wsdata.wskyzx.com:25790，并提供直接添加到圈 X 重写资源的 Wusheng-Bus-Diagnostic-v0.0.2.conf，关闭资源解析器。开启重写与 MITM、信任证书，再回微信“武胜公交”查看实时公交、余额和乘车码，最后回 Scripting 读诊断。完成后关闭该订阅。
 截图只证明 TLS 1.3 连接，不能据此确定具体 HTTP 接口或 WebSocket 协议，也没有 Cookie、接口路径或数据结构。诊断先匹配该端口的 HTTPS 请求，不主动访问服务器。若没有记录，需继续核对 MITM、协议和微信请求方式，不伪报已接通。
+
+## 0.0.3：电脑本地代码核对
+
+用户授权检查电脑微信小程序后，从刚更新的武胜公交小程序缓存（appid wxe9d58fd6e1221aad，版本39）核对出业务地址 https://wsapi.wskyzx.com:26110 ，而 wsdata.wskyzx.com:25790/ws 为 WebSocket 推送。默认诊断目标现改为前者；使用 Wusheng-Bus-Diagnostic-v0.0.3.conf。
+鉴权为 Authorization Bearer Token，不应假设有可直接复用的 Cookie。无鉴权 POST /api/AppBusiness/GetBusLine 已用小规模只读请求验证 HTTP200、code0，返回真实线路列表。代码中的 GetPayRrcode 同时返回 money 和 qrcode，余额除以100显示；其他账号接口及码有效期尚未在线验证。
+本次未抓取用户 Token，未读取聊天记录，未修改证书或代理。原小程序代码只供本机分析，不随包或仓库分发；本版仍是诊断工具，不冒充完整公交组件。
