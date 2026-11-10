@@ -37,3 +37,25 @@ https://raw.githubusercontent.com/zxwzywzy/cmcc/main/Paperclip-Cookie-Quantumult
 已检查 33 个 JavaScript 文件语法、规则数量、主机名数量和 5 个请求头分发用例；尚未在 iOS Quantumult X 真机实测。
 
 格式参考：https://github.com/crossutility/Quantumult-X/blob/master/sample.conf 和 https://github.com/crossutility/Quantumult-X/blob/master/sample-import-rewrite.snippet 。
+
+## 中国广电 App 抓取（试用版）
+
+独立订阅：
+
+```
+https://raw.githubusercontent.com/zxwzywzy/cmcc/main/ChinaBroadnet-App-Cookie.conf
+```
+
+与合集一样在重写资源中添加，关闭资源解析器；启用重写与 MITM，安装并信任证书。打开中国广电 App，登录后进入“我的”，刷新余量/套餐/账户页面。
+
+**未在真机验证。** 已知公开的小程序脚本使用 wx.10099.com.cn/contact-web/api/busi/qryUserInfo，读取 access 请求头及 body.data；App 域名 app.10099.com.cn 有公开规则记录，但本版本的 `/contact-web/api/busi/` 路径族和 App 鉴权字段是待验证推断，不能据此宣称 App 兼容。若 App 使用不同接口/请求头/响应令牌，或证书固定，本版可能无提示或无法捕获。
+
+本版只捕获已知字段 access / authorization / cookie / token / access-token / x-access-token，以及业务请求 URL、方法、正文和少量上下文头，保存到圈 X 本地 `china_broadnet_app_capture_v1`。通知只表示本地保存成功，不代表令牌有效、可自动签到或兼容其他广电脚本。不打印、不上传凭据，不发送任何网络请求；下一个账号覆盖上一个账号。排除常见登录/验证码字段并限制正文大小，但保存内容仍是敏感登录数据。
+
+使用 script-request-body 保留可能必需的请求体；空 body 不触发是圈 X 的限制。请求捕获路径暂不扩到所有域名或登录接口。抓到后关闭本独立订阅。如无提示，请先反馈“无提示”；进一步定位只需脱敏后的请求域名、路径、请求方法和字段名称，不要公开 Cookie/Token 或完整抓包。
+
+此功能独立发布，未直接并入 Paperclip 合集，避免试用规则影响现有已配置项目。通过 JavaScript 语法检查和 7 个模拟保存/去重/范围/过滤/失败用例，仍需用户设备验证。
+
+参考：
+- https://github.com/wuhuhuuuu/study/blob/main/Scripts/ChinaBroadnet/ChinaBroadnet.cookie.js
+- https://github.com/blackmatrix7/ios_rule_script （包含 app.10099.com.cn 的 App 域名规则）
