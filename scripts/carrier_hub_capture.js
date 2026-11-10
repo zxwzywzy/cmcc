@@ -86,6 +86,7 @@
   // scripts/carrier_hub_capture.source.js
   var DATA = "carrier_hub_v1";
   var PENDING = "carrier_hub_pending_v1";
+  var DIAG = "carrier_hub_diagnostics_v1";
   function read(key) {
     try {
       return JSON.parse($prefs.valueForKey(key) || "{}");
@@ -96,11 +97,38 @@
   function notify(p, text) {
     $notify(names[p] + " \xB7 \u8FD0\u8425\u5546\u5C0F\u7EC4\u4EF6", "", text);
   }
+  function nearby(url) {
+    if (/^https:\/\/appfuwu\.189\.cn(?::9021)?\/query\//i.test(url)) return "telecom";
+    if (/^https:\/\/(?:app|wx)\.10099\.com\.cn\/contact-web\/api\/busi\//i.test(url) && !/(?:login|password|sms|verify)/i.test(url.split("?")[0])) return "broadnet";
+    if (/^https:\/\/m\.client\.10010\.com\/mobileService\/home\/query/i.test(url)) return "unicom";
+    return null;
+  }
+  function diagnostic(p, stage, message, status) {
+    const d = read(DIAG);
+    d.version = 1;
+    d.providers = d.providers || {};
+    const old = d.providers[p];
+    const match = String($request.url).match(/^https:\/\/([^/?#]+)([^?#]*)/);
+    const path = match ? (match[1] + match[2]).replace(/[A-Za-z0-9_-]{16,}|\d{5,}/g, ":id") : "\u5DF2\u5339\u914D";
+    d.providers[p] = { stage, path, time: Date.now(), ...status ? { status } : {} };
+    $prefs.setValueForKey(JSON.stringify(d), DIAG);
+    if (!old || old.stage !== stage || Date.now() - old.time > 6e4) notify(p, message);
+  }
+  function responseStatus() {
+    const raw = $response.statusCode ?? $response.status ?? 200;
+    const match = String(raw).match(/\b(\d{3})\b/);
+    return match ? Number(match[1]) : Number(raw);
+  }
   try {
     const p = endpoint($request.url);
+    if (!p) {
+      const candidate = nearby(String($request.url || ""));
+      if (candidate) diagnostic(candidate, "nearby-query", "\u5DF2\u770B\u5230\u4E1A\u52A1\u67E5\u8BE2\u6D41\u91CF\uFF0C\u4F46\u63A5\u53E3\u5C1A\u672A\u9002\u914D\uFF0C\u672A\u4FDD\u5B58\u4F59\u91CF\u3002\u8BF7\u5728\u7EC4\u4EF6\u4E2D\u5BFC\u5165\u67E5\u770B\u8BCA\u65AD\u3002");
+    }
     if (p) {
       const session = String($request.sessionIndex || "");
       if (typeof $response === "undefined") {
+        diagnostic(p, "request-seen", "\u5DF2\u547D\u4E2D\u67E5\u8BE2\u8BF7\u6C42\uFF0C\u7B49\u5F85\u89E3\u6790\u54CD\u5E94\uFF1B\u8FD9\u8FD8\u4E0D\u662F\u6293\u53D6\u6210\u529F\u3002");
         const req = safeRequest($request);
         if (req) {
           const pending = read(PENDING), key = p + ":" + session;
@@ -109,7 +137,7 @@
           Object.keys(pending).filter((k) => Date.now() - pending[k].time < 12e4).slice(-16).forEach((k) => clean[k] = pending[k]);
           $prefs.setValueForKey(JSON.stringify(clean), PENDING);
         }
-      } else if (Number($response.statusCode || $response.status || 200) === 200) {
+      } else if (responseStatus() === 200) {
         const metrics = normalize(p, JSON.parse($response.body || "{}"));
         const pending = read(PENDING), key = p + ":" + session, saved = pending[key];
         const data = read(DATA);
@@ -121,13 +149,15 @@
         const ok = $prefs.setValueForKey(JSON.stringify(data), DATA);
         delete pending[key];
         $prefs.setValueForKey(JSON.stringify(pending), PENDING);
-        if (ok) notify(p, "\u5DF2\u4FDD\u5B58\u67E5\u8BE2\u6570\u636E" + (data.accounts[p].queryReady ? "\u53CA\u67E5\u8BE2\u8BF7\u6C42" : "\u5FEB\u7167") + "\u3002\u8BF7\u5728 Scripting \u4ECE BoxJS \u5BFC\u5165\uFF0C\u5B8C\u6210\u540E\u5173\u95ED\u6293\u53D6\u3002");
+        if (ok) diagnostic(p, "saved", "\u5DF2\u4FDD\u5B58\u67E5\u8BE2\u6570\u636E" + (data.accounts[p].queryReady ? "\u53CA\u67E5\u8BE2\u8BF7\u6C42" : "\u5FEB\u7167") + "\u3002\u8BF7\u5728 Scripting \u4ECE BoxJS \u5BFC\u5165\uFF0C\u5B8C\u6210\u540E\u5173\u95ED\u6293\u53D6\u3002");
         else notify(p, "\u672C\u5730\u4FDD\u5B58\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5\u5708 X \u5B58\u50A8\u3002");
+      } else {
+        diagnostic(p, "http-error", "\u5DF2\u547D\u4E2D\u63A5\u53E3\uFF0C\u4F46 HTTP \u8FD4\u56DE\u672A\u6210\u529F\uFF0C\u672A\u4FDD\u5B58\u4F59\u91CF\u3002", responseStatus());
       }
     }
   } catch (_) {
     const p = endpoint($request.url);
-    if (p) notify(p, "\u672C\u6B21\u8FD4\u56DE\u672A\u80FD\u89E3\u6790\uFF0C\u672A\u8986\u76D6\u4E0A\u6B21\u6570\u636E\u3002");
+    if (p) diagnostic(p, "schema-mismatch", "\u63A5\u53E3\u5DF2\u547D\u4E2D\uFF0C\u4F46\u54CD\u5E94\u683C\u5F0F\u5C1A\u672A\u9002\u914D\u6216\u4F1A\u8BDD\u5931\u6548\uFF1B\u672A\u8986\u76D6\u4E0A\u6B21\u6570\u636E\u3002");
   } finally {
     $done({});
   }

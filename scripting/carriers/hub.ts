@@ -44,7 +44,20 @@ export async function importAll(hostOverride?:string):Promise<string>{
   if(!imported.length)throw Error('没有可导入的数据')
   write(records);otherMessage=`已导入：${imported.join('、')}`
  }catch{otherMessage='联通／电信／广电未导入：请确认 BoxJS 可用，并用配套订阅重新抓取查询响应'}
- return mobileMessage+'；'+otherMessage
+ let diagnostics=''
+ try{
+  const res=await fetch(`https://${host}/query/data/carrier_hub_diagnostics_v1`)
+  if(res.ok){
+   const data=await res.json() as {val?:string};const parsed=JSON.parse(data.val||'{}')
+   const labels:Record<string,string>={'request-seen':'请求已命中，尚无可解析响应','nearby-query':'看到了业务流量，但接口未适配','http-error':'接口返回失败','schema-mismatch':'响应未适配或会话失效','saved':'已保存查询数据'}
+   const rows=(['unicom','telecom','broadnet'] as Provider[]).flatMap(p=>{
+    const stage=parsed?.providers?.[p]?.stage
+    return labels[stage]?[`${providerNames[p]}：${labels[stage]}`]:[]
+   })
+   if(rows.length)diagnostics='\n抓取诊断：\n'+rows.join('\n')
+  }
+ }catch{}
+ return mobileMessage+'；'+otherMessage+diagnostics
 }
 export async function loadProvider(p:Provider,force=false):Promise<CarrierState>{
  if(p==='cmcc'){

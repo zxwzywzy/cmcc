@@ -98,7 +98,7 @@ function Preview(props: { style: StyleDef; family: Family; slots: Slot[]; look?:
     else {setState({provider:carrier,message:'读取中…'});loadProvider(carrier).then(value=>{if(active)setState(value)})}
     return ()=>{active=false}
   },[carrier,switchable])
-  const cycle=()=>{const imported=importedProviders();const next=nextCarrier(carrier,imported.length>1?imported:providerIds) as Provider;selectCarrier(next);setCarrier(next)}
+  const cycle=()=>{const next=nextCarrier(carrier,providerIds) as Provider;selectCarrier(next);setCarrier(next)}
   const view = renderStyle(props.style, props.family, { inApp: true, slots: slotsFor(props.style, props.slots), look: props.look ?? getLook(), page: 0,
     carrier:switchable?state:undefined,carrierSwitch:switchable,onCarrierChange:cycle })
   const room = props.family.startsWith('system') ? 12 : 0

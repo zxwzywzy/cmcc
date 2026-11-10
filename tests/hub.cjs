@@ -5,6 +5,7 @@ let envelope={val:JSON.stringify({version:1,accounts:{broadnet:{metrics:{provide
 let mode='ok';
 const scripting={fetch:async(url,opts)=>{
  calls.push([url,opts]);
+ if(url.includes('carrier_hub_diagnostics_v1'))return {ok:true,json:async()=>({val:JSON.stringify({providers:{telecom:{stage:'nearby-query'}}})})};
  if(url.includes('/query/data/'))return {ok:true,json:async()=>envelope};
  if(mode==='error')throw Error('synthetic offline');
  return {ok:true,json:async()=>({status:'000000',data:{userData:{fee:250,flow:2097152,voice:10}}})};
@@ -21,7 +22,7 @@ const m={exports:{}};const context={module:m,exports:m.exports,require:name=>nam
 
  assert.throws(()=>hub.savePreferences('evil.test',120));
  const raw=JSON.parse(envelope.val);for(const p of ['unicom','telecom'])raw.accounts[p]={metrics:{provider:p,balance:3,flowMB:512,fetchedAt:1},request:null,queryReady:false};envelope={val:JSON.stringify(raw)};
- const summary=await hub.importAll();for(const p of ['中国联通','中国电信','中国广电'])assert.ok(summary.includes(p));
+ const summary=await hub.importAll();assert.ok(summary.includes('接口未适配'));for(const p of ['中国联通','中国电信','中国广电'])assert.ok(summary.includes(p));
  for(const p of ['unicom','telecom']){const state=await hub.loadProvider(p);assert.equal(state.metrics.balance,3);assert.equal(state.stale,true);}
  let s=await hub.loadProvider('broadnet',true);assert.equal(s.metrics.balance,2.5);assert.equal(s.metrics.flowMB,2048);assert.equal(s.stale,undefined);assert.equal(calls.at(-1)[1].redirect,'error');
  mode='error';s=await hub.loadProvider('broadnet',true);assert.equal(s.stale,true);assert.equal(s.metrics.balance,2.5);

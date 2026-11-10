@@ -1,12 +1,34 @@
 import { endpoint, normalize, safeRequest, names } from '../scripting/carriers/normalizers.js';
-const DATA='carrier_hub_v1', PENDING='carrier_hub_pending_v1';
+const DATA='carrier_hub_v1', PENDING='carrier_hub_pending_v1', DIAG='carrier_hub_diagnostics_v1';
 function read(key) {try{return JSON.parse($prefs.valueForKey(key)||'{}');}catch(_){return {};}}
 function notify(p,text){$notify(names[p]+' · 运营商小组件','',text);}
+function nearby(url){
+ if(/^https:\/\/appfuwu\.189\.cn(?::9021)?\/query\//i.test(url))return 'telecom';
+ if(/^https:\/\/(?:app|wx)\.10099\.com\.cn\/contact-web\/api\/busi\//i.test(url)&&!/(?:login|password|sms|verify)/i.test(url.split('?')[0]))return 'broadnet';
+ if(/^https:\/\/m\.client\.10010\.com\/mobileService\/home\/query/i.test(url))return 'unicom';
+ return null;
+}
+function diagnostic(p,stage,message,status){
+ const d=read(DIAG);d.version=1;d.providers=d.providers||{};
+ const old=d.providers[p];
+ // No query string, header, request/response body or credential is retained here.
+ const match=String($request.url).match(/^https:\/\/([^/?#]+)([^?#]*)/);
+ const path=match?(match[1]+match[2]).replace(/[A-Za-z0-9_-]{16,}|\d{5,}/g,':id'):'已匹配';
+ d.providers[p]={stage,path,time:Date.now(),...(status?{status}:{})};
+ $prefs.setValueForKey(JSON.stringify(d),DIAG);
+ if(!old||old.stage!==stage||Date.now()-old.time>60000)notify(p,message);
+}
+function responseStatus(){
+ const raw=$response.statusCode??$response.status??200;
+ const match=String(raw).match(/\b(\d{3})\b/);return match?Number(match[1]):Number(raw);
+}
 try {
  const p=endpoint($request.url);
+ if(!p){const candidate=nearby(String($request.url||''));if(candidate)diagnostic(candidate,'nearby-query','已看到业务查询流量，但接口尚未适配，未保存余量。请在组件中导入查看诊断。')}
  if(p) {
   const session=String($request.sessionIndex||'');
   if(typeof $response==='undefined') {
+   diagnostic(p,'request-seen','已命中查询请求，等待解析响应；这还不是抓取成功。');
    const req=safeRequest($request);
    if(req) {
     const pending=read(PENDING), key=p+':'+session;
@@ -14,7 +36,7 @@ try {
     const clean={};Object.keys(pending).filter(k=>Date.now()-pending[k].time<120000).slice(-16).forEach(k=>clean[k]=pending[k]);
     $prefs.setValueForKey(JSON.stringify(clean),PENDING);
    }
-  } else if(Number($response.statusCode||$response.status||200)===200) {
+  } else if(responseStatus()===200) {
    const metrics=normalize(p,JSON.parse($response.body||'{}'));
    const pending=read(PENDING), key=p+':'+session, saved=pending[key];
    const data=read(DATA); data.version=1;data.accounts=data.accounts||{};
@@ -24,10 +46,11 @@ try {
    data.accounts[p]={metrics,request,queryReady:!!request&&(request.method==='GET'||!!request.body)};
    const ok=$prefs.setValueForKey(JSON.stringify(data),DATA);
    delete pending[key];$prefs.setValueForKey(JSON.stringify(pending),PENDING);
-   if(ok)notify(p,'已保存查询数据'+(data.accounts[p].queryReady?'及查询请求':'快照')+'。请在 Scripting 从 BoxJS 导入，完成后关闭抓取。');
+   if(ok)diagnostic(p,'saved','已保存查询数据'+(data.accounts[p].queryReady?'及查询请求':'快照')+'。请在 Scripting 从 BoxJS 导入，完成后关闭抓取。');
    else notify(p,'本地保存失败，请检查圈 X 存储。');
+  } else {diagnostic(p,'http-error','已命中接口，但 HTTP 返回未成功，未保存余量。',responseStatus());
   }
  }
 } catch(_) {
- const p=endpoint($request.url);if(p)notify(p,'本次返回未能解析，未覆盖上次数据。');
+ const p=endpoint($request.url);if(p)diagnostic(p,'schema-mismatch','接口已命中，但响应格式尚未适配或会话失效；未覆盖上次数据。');
 } finally {$done({});}

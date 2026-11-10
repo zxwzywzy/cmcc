@@ -1,5 +1,5 @@
 import { Button, HStack, Image, Text } from 'scripting'
-import { providerNames, importedProviders, providerIds } from './hub'
+import { providerNames, providerIds } from './hub'
 import { CarrierNextIntent } from './app_intents'
 import type { Ctx } from './mobile/ui'
 /** The original top-left carrier name is the only switch target. */
@@ -11,6 +11,5 @@ export function CarrierTitle({ctx}:{ctx:Ctx}){
   <Image systemName="arrow.triangle.2.circlepath" font={9} foregroundStyle={ctx.th.t3}/>
  </HStack>
  if(ctx.inApp)return <Button action={ctx.onCarrierChange||(()=>{})} buttonStyle="plain">{body}</Button>
- const available=importedProviders()
- return <Button intent={CarrierNextIntent({current:provider,available:available.length>1?available:providerIds})} buttonStyle="plain">{body}</Button>
+ return <Button intent={CarrierNextIntent({current:provider,available:providerIds})} buttonStyle="plain">{body}</Button>
 }
