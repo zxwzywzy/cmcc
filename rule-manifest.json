@@ -1,0 +1,299 @@
+[
+  {
+    "kind": "request",
+    "pattern": "^https:\\/\\/api\\.weibo\\.cn\\/2\\/(statuses\\/container_timeline_topicsub|page\\/button)",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/weibotalk/weibotalk.cookie.js",
+    "name": "微博超话 Cookie",
+    "body": true,
+    "file": "app_weibotalk_weibotalk.cookie.js"
+  },
+  {
+    "kind": "request",
+    "pattern": "^https:\\/\\/pbaccess\\.video\\.qq\\.com\\/",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/tenvideo/tenvideo.js",
+    "name": "腾讯视频 Cookie",
+    "body": false,
+    "file": "app_tenvideo_tenvideo.js"
+  },
+  {
+    "kind": "response",
+    "pattern": "^https:\\/\\/api-takumi\\.(miyoushe|mihoyo)\\.com\\/(binding\\/api\\/getUserGameRolesByStoken|event\\/luna\\/)",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/mihoyo/mihoyo.cookie.js",
+    "name": "米游社 Cookie",
+    "body": true,
+    "file": "app_mihoyo_mihoyo.cookie.js"
+  },
+  {
+    "kind": "request",
+    "pattern": "^https:\\/\\/app\\.mixcapp\\.com\\/mixc\\/api\\/v4\\/member\\/getPersonalData",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/newmixc/newmixc.cookie.js",
+    "name": "一点万象 Cookie",
+    "body": false,
+    "file": "app_newmixc_newmixc.cookie.js"
+  },
+  {
+    "kind": "request",
+    "pattern": "^https:\\/\\/shop-api\\.retail\\.mi\\.com\\/mtop\\/mf\\/act\\/infinite\\/(do|done)",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/mishop/mishop.cookie.js",
+    "name": "小米商城 Cookie",
+    "body": false,
+    "file": "app_mishop_mishop.cookie.js"
+  },
+  {
+    "kind": "request",
+    "pattern": "^https:\\/\\/shop-api\\.retail\\.mi\\.com\\/mtop\\/navi\\/venue\\/batch",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/milottery/milottery.js",
+    "name": "小米抽奖 Cookie",
+    "body": true,
+    "file": "app_milottery_milottery.js"
+  },
+  {
+    "kind": "request",
+    "pattern": "^https:\\/\\/m\\.xiaomiyoupin\\.com\\/mtop\\/act\\/redPacketSign\\/getActInfo",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/youpin/youpin.js",
+    "name": "有品 Cookie",
+    "body": false,
+    "file": "app_youpin_youpin.js"
+  },
+  {
+    "kind": "request",
+    "pattern": "^https:\\/\\/gw2c-hw-open\\.longfor\\.com\\/lmarketing-task-api-mvc-prod\\/openapi\\/task\\/v1\\/signature\\/clock$",
+    "condition": "&& ${request.header['x-lf-channel']} == \"L0\"",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/lhtj/lhtj.js",
+    "name": "龙湖App Cookie",
+    "body": false,
+    "file": "app_lhtj_lhtj.js"
+  },
+  {
+    "kind": "request",
+    "pattern": "^https:\\/\\/u6\\.y\\.qq\\.com\\/cgi-bin\\/musics\\.fcg\\?.*(EveryDaySignLvzScore|GetSignInSummary)",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/qqmusic/qqmusic.js",
+    "name": "QQ音乐 Cookie",
+    "body": true,
+    "file": "app_qqmusic_qqmusic.js"
+  },
+  {
+    "kind": "request",
+    "pattern": "^https:\\/\\/user-api-prd-mx\\.wandafilm\\.com\\/user\\/user_info",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/wanda/wanda.cookie.js",
+    "name": "万达电影 Cookie",
+    "body": false,
+    "file": "app_wanda_wanda.cookie.js"
+  },
+  {
+    "kind": "request",
+    "pattern": "^https:\\/\\/xunting\\.vbegin\\.com\\.cn\\/sns\\/app",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/tingtingfm/tingtingfm.js",
+    "name": "听听FM Cookie",
+    "body": false,
+    "file": "app_tingtingfm_tingtingfm.js"
+  },
+  {
+    "kind": "request",
+    "pattern": "^https:\\/\\/personal-act\\.wps\\.cn\\/activity-rubik\\/activity\\/page_info",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/wps/wps.cookie.js",
+    "name": "WPS Cookie",
+    "body": false,
+    "file": "app_wps_wps.cookie.js"
+  },
+  {
+    "kind": "request",
+    "pattern": "^https:\\/\\/api-cs\\.intsig\\.net\\/user\\/cs\\/get_user_attribute",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/camscanner/camscanner.cookie.js",
+    "name": "扫描全能王 Cookie",
+    "body": false,
+    "file": "app_camscanner_camscanner.cookie.js"
+  },
+  {
+    "kind": "request",
+    "pattern": "^https:\\/\\/cn-wxmall\\.dreame\\.tech\\/main\\/my\\/info",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/dreame/dreame.js",
+    "name": "追觅 Cookie",
+    "body": true,
+    "file": "app_dreame_dreame.js"
+  },
+  {
+    "kind": "request",
+    "pattern": "^https:\\/\\/cn-yx-wxmall\\.dreame\\.tech\\/main\\/my\\/info",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/linghu/linghu.js",
+    "name": "灵狐灵购 Cookie",
+    "body": true,
+    "file": "app_linghu_linghu.js"
+  },
+  {
+    "kind": "request",
+    "pattern": "^https:\\/\\/www\\.nodeseek\\.com\\/",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/nodeseek/nodeseek.cookie.js",
+    "name": "NodeSeek Cookie",
+    "body": false,
+    "file": "app_nodeseek_nodeseek.cookie.js"
+  },
+  {
+    "kind": "request",
+    "pattern": "^https:\\/\\/pan1\\.me\\/(?:\\?|$)",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/pan1/pan1.js",
+    "name": "123社区 Cookie",
+    "body": false,
+    "file": "app_pan1_pan1.js"
+  },
+  {
+    "kind": "request",
+    "pattern": "^https:\\/\\/pan\\.baidu\\.com\\/coins\\/taskcenter\\/signinlist",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/baidunetdisk/baidunetdisk.js",
+    "name": "百度网盘 Cookie",
+    "body": false,
+    "file": "app_baidunetdisk_baidunetdisk.js"
+  },
+  {
+    "kind": "request",
+    "pattern": "^https:\\/\\/app-gw\\.shuye\\.com\\/member\\/user\\/profile",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/laifen/laifen.js",
+    "name": "徕芬 Cookie",
+    "body": false,
+    "file": "app_laifen_laifen.js"
+  },
+  {
+    "kind": "request",
+    "pattern": "^https:\\/\\/client\\.app\\.coc\\.10086\\.cn\\/biz-orange\\/[LD]N\\/uam(onekey|randcode)login\\/autoLogin",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/cmcc/cmcc.js",
+    "name": "中国移动 Cookie",
+    "body": true,
+    "file": "app_cmcc_cmcc.js"
+  },
+  {
+    "kind": "request",
+    "pattern": "^https:\\/\\/clientaccess\\.10086\\.cn\\/biz-orange\\/BN\\/scoreQueryService\\/getScoreQuery",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/cmcc/cmcc.js",
+    "name": "中国移动 Cookie",
+    "body": true,
+    "file": "app_cmcc_cmcc.js"
+  },
+  {
+    "kind": "request",
+    "pattern": "^https:\\/\\/h5\\.bj\\.10086\\.cn\\/ActSignIn2023\\/doPrize",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/cmcc/cmcc.js",
+    "name": "中国移动 Cookie",
+    "body": false,
+    "file": "app_cmcc_cmcc.js"
+  },
+  {
+    "kind": "request",
+    "pattern": "^https:\\/\\/api\\.xiaoheihe\\.cn\\/task\\/sign_list",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/heybox/heybox.js",
+    "name": "小黑盒 Cookie",
+    "body": false,
+    "file": "app_heybox_heybox.js"
+  },
+  {
+    "kind": "response",
+    "pattern": "^https:\\/\\/popvip\\.paquapp\\.com\\/miniapp\\/v2\\/(svip_lite\\/user_info|wechat_message\\/template_info)",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/miniprogram/ppmt/ppmt.js",
+    "name": "泡泡玛特 Cookie",
+    "body": true,
+    "file": "miniprogram_ppmt_ppmt.js"
+  },
+  {
+    "kind": "request",
+    "pattern": "https:\\/\\/api\\.tuhu\\.cn\\/User\\/(GetMemberSignInInfoAsync|GetRightsList)",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/miniprogram/tuhu/tuhu.js",
+    "name": "途虎养车 Cookie",
+    "body": false,
+    "file": "miniprogram_tuhu_tuhu.js"
+  },
+  {
+    "kind": "request",
+    "pattern": "^https:\\/\\/superapp-public\\.kiwa-tech\\.com\\/activity\\/wxapp\\/signin\\/(query|querySite|querySwitch|queryFragment|signin)",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/miniprogram/haidilao/haidilao.js",
+    "name": "海底捞 Cookie",
+    "body": false,
+    "file": "miniprogram_haidilao_haidilao.js"
+  },
+  {
+    "kind": "request",
+    "pattern": "^https:\\/\\/media\\.meituan\\.com\\/fulishemini\\/couponActivity\\/listActivityCoupon",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/miniprogram/huisheng/huisheng.cookie.js",
+    "name": "惠省红包墙 Cookie",
+    "body": true,
+    "file": "miniprogram_huisheng_huisheng.cookie.js"
+  },
+  {
+    "kind": "request",
+    "pattern": "^https:\\/\\/member-center\\.miniso\\.com\\/userinfo\\/userinfo\\/GetUserInfoV3",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/miniprogram/miniso/miniso.js",
+    "name": "名创优品 Cookie",
+    "body": false,
+    "file": "miniprogram_miniso_miniso.js"
+  },
+  {
+    "kind": "request",
+    "pattern": "https:\\/\\/a\\.china-smartech\\.com\\/restful\\/mall\\/\\d+\\/checkInForm",
+    "condition": "&& ${request.header['referer']} ~= /wx1b1dda695dff82c8/",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/miniprogram/bhg/bhg.js",
+    "name": "北京华联 Cookie",
+    "body": false,
+    "file": "miniprogram_bhg_bhg.js"
+  },
+  {
+    "kind": "request",
+    "pattern": "https:\\/\\/a\\.china-smartech\\.com\\/restful\\/mall\\/\\d+\\/checkInForm",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/miniprogram/longde/longde.js",
+    "name": "龙德广场 Cookie",
+    "body": false,
+    "file": "miniprogram_longde_longde.js"
+  },
+  {
+    "kind": "request",
+    "pattern": "^https:\\/\\/gw2c-hw-open\\.longfor\\.com\\/lmarketing-task-api-mvc-prod\\/openapi\\/task\\/v1\\/signature\\/clock$",
+    "condition": "&& ${request.header['x-lf-channel']} == \"C2\"",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/miniprogram/lhtj/lhtj.js",
+    "name": "龙湖天街 Cookie",
+    "body": false,
+    "file": "miniprogram_lhtj_lhtj.js"
+  },
+  {
+    "kind": "response",
+    "pattern": "^https:\\/\\/scrm-b\\.zjian\\.net\\/api\\/member\\/(minaLogin|find)",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/miniprogram/wedome/wedome.js",
+    "name": "味多美 Cookie",
+    "body": true,
+    "file": "miniprogram_wedome_wedome.js"
+  },
+  {
+    "kind": "request",
+    "pattern": "^https:\\/\\/webapi\\.qmai\\.cn\\/web\\/(cmk-center\\/sign\\/(activityInfo|userSignStatistics|userSignRecordCalendar)|catering\\/common\\/common-info|mall-apiserver\\/integral\\/(home\\/index|item\\/goods(\\/detail)?))",
+    "condition": "",
+    "url": "https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/miniprogram/linli/linli.js",
+    "name": "林里 Cookie",
+    "body": true,
+    "file": "miniprogram_linli_linli.js"
+  }
+]
