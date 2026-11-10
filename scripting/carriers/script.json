@@ -1,0 +1,19 @@
+{
+  "name": "Carrier Balance",
+  "version": "0.1.0",
+  "description": "移动、联通、电信、广电余额与余量；接口适配试用版",
+  "author": {
+    "name": "zxwzywzy",
+    "homepage": "https://github.com/zxwzywzy/cmcc"
+  },
+  "entry": "index.tsx",
+  "icon": "antenna.radiowaves.left.and.right",
+  "color": "rgba(0,133,208,1)",
+  "runInApp": false,
+  "contributors": [],
+  "remoteResource": "https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/carriers.zip",
+  "localizedNames": {
+    "zh": "运营商余量",
+    "en": "Carrier Balance"
+  }
+}

@@ -1,0 +1,71 @@
+import { fetch } from 'scripting'
+import { endpoint, normalize, safeRequest, names } from './normalizers.js'
+import { loadAccount as loadMobile, listAccounts as mobileAccounts, importFromBoxJS as importMobile, removeAccount as removeMobile, clearCache as clearMobileCache } from './mobile/api'
+export type Provider = 'cmcc' | 'unicom' | 'telecom' | 'broadnet'
+export type Metrics = {provider:Provider; balance?:number; flowMB?:number; voice?:number; fetchedAt:number}
+export type CarrierRecord = {metrics:Metrics;request:any;queryReady:boolean}
+export type CarrierState = {provider:Provider;metrics?:Metrics;message?:string;stale?:boolean}
+const CREDENTIALS='carrier.hub.credentials.v1'
+const SETTINGS='carrier.hub.settings.v1'
+const store=Storage as unknown as {get<T>(k:string):T|null;set(k:string,v:unknown):void}
+export const providerNames=names as Record<Provider,string>
+export const providerIds:Provider[]=['cmcc','unicom','telecom','broadnet']
+export function preferences():{host:string;refresh:number} {
+ try{return {...{host:'boxjs.com',refresh:120},...JSON.parse(store.get<string>(SETTINGS)||'{}')}}catch{return {host:'boxjs.com',refresh:120}}
+}
+export function savePreferences(host:string,refresh:number){
+ if(!/^(?:boxjs\.com|boxjs\.net)$/.test(host.trim()))throw Error('请选择 boxjs.com 或 boxjs.net')
+ store.set(SETTINGS,JSON.stringify({host:host.trim(),refresh:[30,60,120,240].includes(refresh)?refresh:120}))
+}
+function read():Partial<Record<Provider,CarrierRecord>> {try{return JSON.parse(Keychain.get(CREDENTIALS)||'{}')}catch{return {}}}
+function write(v:Partial<Record<Provider,CarrierRecord>>){Keychain.set(CREDENTIALS,JSON.stringify(v))}
+export function forget(p:Provider){if(p==='cmcc'){for(const tel of mobileAccounts())removeMobile(tel)}else{const x=read();delete x[p];write(x)}}
+function validMetrics(p:Provider,m:any):m is Metrics {
+ return m&&m.provider===p&&typeof m.fetchedAt==='number'&&Number.isFinite(m.fetchedAt)&&['balance','flowMB','voice'].some(k=>typeof m[k]==='number'&&Number.isFinite(m[k]))
+}
+export async function importAll():Promise<string>{
+ const host=preferences().host
+ let mobileMessage='',otherMessage=''
+ try{const ids=await importMobile(host);mobileMessage=`移动 ${ids.length} 个账号`}catch{mobileMessage='移动未导入（未抓取或 BoxJS 不可达）'}
+ try{
+  const res=await fetch(`https://${host}/query/data/carrier_hub_v1`)
+  if(!res.ok)throw Error('BoxJS 查询失败')
+  const envelope=await res.json() as {val?:string}
+  const raw=JSON.parse(envelope.val||'{}')
+  if(raw.version!==1||!raw.accounts)throw Error('没有新抓取的数据')
+  const records=read();let count=0
+  for(const p of ['unicom','telecom','broadnet'] as Provider[]){
+   const r=raw.accounts[p];if(!r||!validMetrics(p,r.metrics))continue
+   const request=safeRequest(r.request)
+   if(request&&endpoint(request.url)!==p)continue
+   records[p]={metrics:r.metrics,request,queryReady:!!request&&(request.method==='GET'||!!request.body)};count++
+  }
+  if(!count)throw Error('没有可导入的数据')
+  write(records);otherMessage=`联通／电信／广电导入 ${count} 项`
+ }catch{otherMessage='其他运营商未导入，请先打开对应 App 抓取查询数据'}
+ return mobileMessage+'；'+otherMessage
+}
+export async function loadProvider(p:Provider,force=false):Promise<CarrierState>{
+ if(p==='cmcc'){
+  if(force)clearMobileCache()
+  try{const a=await loadMobile();return {provider:p,metrics:{provider:p,balance:a.balance,flowMB:a.general?.remainMB,voice:a.voice?.remain,fetchedAt:a.fetchedAt},stale:a.stale}}
+  catch{return {provider:p,message:'请抓取移动登录凭据，再从 BoxJS 导入'}}
+ }
+ const all=read(),record=all[p]
+ if(!record)return {provider:p,message:'尚未导入，请开启抓取后刷新官方 App'}
+ if(!record.queryReady)return {provider:p,metrics:record.metrics,stale:true,message:'查询快照：刷新官方 App 后重新导入以更新'}
+ if(!force&&Date.now()-record.metrics.fetchedAt<300000)return {provider:p,metrics:record.metrics}
+ try{
+  const req=safeRequest(record.request)
+  if(!req||endpoint(req.url)!==p)throw Error('查询地址不匹配')
+  const res=await fetch(req.url,{method:req.method,headers:req.headers,...(req.method==='POST'?{body:req.body}:{}),redirect:'error'})
+  if(!res.ok)throw Error('请求失败')
+  const metrics=normalize(p,await res.json()) as Metrics
+  const latest=read();latest[p]={...record,metrics};write(latest)
+  return {provider:p,metrics}
+ }catch{return {provider:p,metrics:record.metrics,stale:true,message:'查询失败，显示上次数据；请重新抓取并导入'}}
+}
+export async function loadAll(force=false){return Promise.all(providerIds.map(p=>loadProvider(p,force)))}
+export function value(n:number|undefined,unit:string){return typeof n==='number'&&Number.isFinite(n)?(unit==='元'?n.toFixed(2):n.toFixed(n%1?2:0))+' '+unit:'—'}
+export function flowValue(n:number|undefined){return n===undefined?'—':Math.abs(n)>=1024?value(n/1024,'GB'):value(n,'MB')}
+export function timeValue(n:number|undefined){return n?new Date(n).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'尚无数据'}

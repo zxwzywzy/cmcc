@@ -1,0 +1,29 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),esbuild=require('esbuild');
+const root='scripting/carriers/';
+const compiled=esbuild.buildSync({entryPoints:[root+'normalizers.js'],bundle:true,format:'cjs',write:false}).outputFiles[0].text;
+const moduleObject={exports:{}};vm.runInNewContext(compiled,{module:moduleObject,exports:moduleObject.exports,Date});
+const {normalize,endpoint,safeRequest}=moduleObject.exports;
+let count=0;function test(name,fn){fn();count++;console.log('PASS '+name)}
+const broad={status:'000000',data:{userData:{fee:'-125',flow:1048576,voice:'0'}}};
+const telecom={responseData:{resultCode:'0000',data:{balanceInfo:{indexBalanceDataInfo:{balance:'12.34'}},flowInfo:{commonFlow:{balance:1048576}},voiceInfo:{voiceDataInfo:{balance:90}}}}};
+const unicom={code:'Y',data:{dataList:[{type:'fee',number:'15.25',unit:'元',remainTitle:'剩余话费'},{type:'flow',number:'1.5',unit:'GB',remainTitle:'剩余流量'},{type:'voice',number:'100',unit:'分钟',remainTitle:'剩余语音'}]}};
+test('broadnet cents, KB and zero',()=>{const x=normalize('broadnet',broad);assert.equal(x.balance,-1.25);assert.equal(x.flowMB,1024);assert.equal(x.voice,0)});
+test('telecom balance stays yuan',()=>{const x=normalize('telecom',telecom);assert.equal(x.balance,12.34);assert.equal(x.flowMB,1024);assert.equal(x.voice,90)});
+test('unicom explicit units',()=>{const x=normalize('unicom',unicom);assert.equal(x.flowMB,1536);assert.equal(x.balance,15.25)});
+test('missing values are not zero',()=>{const x=normalize('broadnet',{status:'000000',data:{userData:{fee:0,flow:null,voice:''}}});assert.equal(x.balance,0);assert.equal(x.flowMB,undefined);assert.equal(x.voice,undefined)});
+test('error envelopes rejected',()=>{for(const p of ['unicom','telecom','broadnet'])assert.throws(()=>normalize(p,{}))});
+test('unknown units never guessed',()=>{assert.throws(()=>normalize('unicom',{code:'Y',data:{dataList:[{type:'flow',number:10,unit:'unknown',remainTitle:'剩余'}]}}))});
+test('used flow not shown as remaining',()=>{const x=normalize('unicom',{code:'Y',data:{dataList:[...unicom.data.dataList.slice(0,1),{type:'flow',number:10,unit:'GB',remainTitle:'已用流量'}]}});assert.equal(x.flowMB,undefined)});
+const url='https://app.10099.com.cn/contact-web/api/busi/qryUserInfo';
+test('endpoint rejects host smuggling',()=>{for(const s of ['https://app.10099.com.cn.evil.test/contact-web/api/busi/qryUserInfo','https://app.10099.com.cn@evil.test/contact-web/api/busi/qryUserInfo',url+'/delete','http://app.10099.com.cn/contact-web/api/busi/qryUserInfo'])assert.equal(endpoint(s),null)});
+test('request methods and password blocked',()=>{assert.equal(safeRequest({url,method:'DELETE'}),null);assert.equal(safeRequest({url,method:'POST',body:'{"password":"fake"}'}),null)});
+test('request strips transport headers',()=>{const r=safeRequest({url,method:'POST',body:'{}',headers:{Access:'fake',Host:'evil',Connection:'close','Content-Length':'200'}});assert.equal(r.headers.Access,'fake');assert.equal(r.headers.Host,undefined)});
+const capture=fs.readFileSync('scripts/carrier_hub_capture.js','utf8');
+function run(req,res,store={}){let done=0;const notices=[];const ctx={$request:req,$prefs:{valueForKey:k=>store[k],setValueForKey:(v,k)=>(store[k]=v,true)},$notify:(...a)=>notices.push(a),$done:()=>done++,console};if(res!==undefined)ctx.$response=res;vm.runInNewContext(capture,ctx);assert.equal(done,1);return {store,notices}}
+const req={url,method:'POST',sessionIndex:42,headers:{access:'fake'},body:'{"data":"fake"}'};
+test('capture correlation and snapshot',()=>{const {store}=run(req);run(req,{statusCode:200,body:JSON.stringify(broad)},store);const a=JSON.parse(store.carrier_hub_v1).accounts.broadnet;assert.equal(a.queryReady,true);assert.equal(a.metrics.balance,-1.25);assert.equal(a.request.body,req.body)});
+test('missing request stage stays snapshot',()=>{const {store}=run(req,{statusCode:200,body:JSON.stringify(broad)});assert.equal(JSON.parse(store.carrier_hub_v1).accounts.broadnet.queryReady,false)});
+test('error cannot overwrite good capture',()=>{const {store}=run(req,{statusCode:200,body:JSON.stringify(broad)});const before=store.carrier_hub_v1;run(req,{statusCode:200,body:'{"status":"error"}'},store);assert.equal(store.carrier_hub_v1,before)});
+test('unrelated endpoints never saved',()=>{const {store}=run({...req,url:'https://example.com/'},{statusCode:200,body:JSON.stringify(broad)});assert.equal(store.carrier_hub_v1,undefined)});
+test('session mismatch never replays other request',()=>{const {store}=run(req);run({...req,sessionIndex:43},{statusCode:200,body:JSON.stringify(broad)},store);assert.equal(JSON.parse(store.carrier_hub_v1).accounts.broadnet.queryReady,false)});
+console.log('Total passed:',count);
