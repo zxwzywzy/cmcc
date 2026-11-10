@@ -19,9 +19,11 @@ function Tile({state,compact=false}:{state:CarrierState;compact?:boolean}){
 }
 async function main(){
  const param=String(Widget.parameter||'').trim(),tokens=param.split(/\s+/),family=Widget.family as Family
- // Keep original CMCC styles and parameter semantics when explicitly requested.
- if(tokens[0]==='移动'&&tokens.length>1){
-  const {style:name,accounts}=parseParam(tokens.slice(1).join(' '));const style=resolveStyle(name,family,accounts.length)
+ // Preserve empty/default, original style names, style IDs and account-tail parameters.
+ // Multi-carrier overview is opt-in with 总览 / 合集 / overview.
+ if((!aliases[tokens[0]]&&!['总览','合集','overview'].includes(param))||aliases[tokens[0]]==='cmcc'){
+  const legacyParam=aliases[tokens[0]]==='cmcc'?tokens.slice(1).join(' '):param
+  const {style:name,accounts}=parseParam(legacyParam);const style=resolveStyle(name,family,accounts.length)
   Widget.present(renderStyle(style,family,{inApp:false,slots:await loadSlots(style,accounts),look:getLook(),page:readPage()}),{policy:'after',date:new Date(Date.now()+preferences().refresh*60000)});return
  }
  const selected=aliases[tokens[0]],states=selected?[await loadProvider(selected)]:await loadAll()

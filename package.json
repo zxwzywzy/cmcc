@@ -1,10 +1,10 @@
 {
   "name": "carrier-balance-widget",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "scripts": {
     "build": "node tools/build.cjs",
-    "test": "node tests/carrier.cjs && node tests/hub.cjs"
+    "test": "node tests/carrier.cjs && node tests/hub.cjs && node tests/widget-routing.cjs"
   },
   "devDependencies": {
     "esbuild": "0.28.2"
