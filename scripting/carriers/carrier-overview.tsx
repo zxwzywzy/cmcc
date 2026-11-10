@@ -1,11 +1,12 @@
-import { Button, HStack, List, Navigation, NavigationStack, Script, Section, Spacer, Text, TextField, VStack, Widget, useEffect, useState } from 'scripting'
-import { loadAll, importAll, forget, providerNames, providerIds, preferences, savePreferences, value, flowValue, timeValue, type CarrierState } from './hub'
+import { Button, HStack, List, Navigation, NavigationStack, Picker, Script, Section, Spacer, Text, TextField, VStack, Widget, useEffect, useState } from 'scripting'
+import { loadAll, importAll, forget, providerNames, providerIds, preferences, savePreferences, value, flowValue, timeValue, getCarrierStyle, setCarrierStyle, carrierStyles, type CarrierStyle, type CarrierState } from './hub'
 export function CarrierOverview(){
  const dismiss=Navigation.useDismiss()
  const [states,setStates]=useState<CarrierState[]>([])
  const [busy,setBusy]=useState(false)
  const [note,setNote]=useState('')
  const [host,setHost]=useState(preferences().host)
+ const [skins,setSkins]=useState(Object.fromEntries(providerIds.map(p=>[p,getCarrierStyle(p)])))
  useEffect(()=>{refresh()},[])
  async function refresh(force=false){
   if(busy)return
@@ -18,11 +19,14 @@ export function CarrierOverview(){
   catch(e){setNote((e as Error).message)}finally{setBusy(false)}
  }
  return <NavigationStack><List navigationTitle="运营商余量" navigationBarTitleDisplayMode="large" toolbar={{cancellationAction:<Button title="关闭" action={dismiss}/>}}>
-  <Section header={<Text>账户概览</Text>} footer={<Text>缺失字段显示 —。查询失败时保留上次数据，并显示实际数据时间。</Text>}>
+  <Section header={<Text>账户概览</Text>} footer={<Text>每家可单独选择全景、账单卡或大字余额；用于总览及非移动固定组件。移动原组件的样式仍在“小组件”页设置。缺失字段显示 —。</Text>}>
    {providerIds.map(p=>{
     const s=states.find(x=>x.provider===p),m=s?.metrics
     return <VStack alignment="leading" spacing={8} padding={{vertical:8}}>
      <HStack><Text font="headline">{providerNames[p]}</Text><Spacer/><Text font="caption" foregroundStyle="secondaryLabel">{s?.stale?'上次数据':m?'已更新':'待导入'}</Text></HStack>
+     <Picker title="总览样式" value={skins[p]} onChanged={(style:CarrierStyle)=>{setCarrierStyle(p,style);setSkins({...skins,[p]:style});Widget.reloadAll()}}>
+      {carrierStyles.map(style=><Text tag={style}>{style}</Text>)}
+     </Picker>
      <HStack><Text>余额</Text><Spacer/><Text monospacedDigit>{value(m?.balance,'元')}</Text></HStack>
      <HStack><Text>{p==='telecom'?'通用剩余流量':'剩余流量'}</Text><Spacer/><Text monospacedDigit>{flowValue(m?.flowMB)}</Text></HStack>
      <HStack><Text>剩余语音</Text><Spacer/><Text monospacedDigit>{value(m?.voice,'分钟')}</Text></HStack>

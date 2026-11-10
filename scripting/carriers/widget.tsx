@@ -1,21 +1,13 @@
 import { Button, HStack, VStack, Spacer, Text, Widget, RoundedRectangle } from 'scripting'
-import { loadAll, loadProvider, providerNames, value, flowValue, timeValue, preferences, type Provider, type CarrierState } from './hub'
+import { loadAll, loadProvider, providerNames, value, flowValue, timeValue, preferences, getCarrierStyle, carrierStyles, type CarrierStyle, type Provider, type CarrierState } from './hub'
 import { parseParam, resolveStyle, renderStyle } from './mobile/styles/index'
 import { getLook, type Family } from './mobile/settings'
 import { loadSlots } from './mobile/slots'
+import { CarrierContent } from './carrier-content'
 import { readPage, readCarrier, CarrierSetIntent } from './app_intents'
 const aliases:Record<string,Provider>={'移动':'cmcc','联通':'unicom','电信':'telecom','广电':'broadnet',cmcc:'cmcc',unicom:'unicom',telecom:'telecom',broadnet:'broadnet'}
-function Tile({state,compact=false}:{state:CarrierState;compact?:boolean}){
- const m=state.metrics
- return <VStack alignment="leading" spacing={compact?3:8} padding={10} frame={{maxWidth:'infinity',maxHeight:'infinity',alignment:'topLeading'}} background={<RoundedRectangle cornerRadius={12} fill="secondarySystemGroupedBackground"/>}>
-  <Text font={12} fontWeight="semibold" lineLimit={1}>{providerNames[state.provider]}{state.stale?' · 缓存':''}</Text>
-  {m?<>
-   <Text font={compact?20:24} fontWeight="semibold" monospacedDigit lineLimit={1} minScaleFactor={0.6}>{value(m.balance,'元')}</Text>
-   <HStack><Text font={11}>流量</Text><Spacer/><Text font={11} monospacedDigit>{flowValue(m.flowMB)}</Text></HStack>
-   <HStack><Text font={11}>语音</Text><Spacer/><Text font={11} monospacedDigit>{value(m.voice,'分钟')}</Text></HStack>
-   <Spacer minLength={0}/><Text font={11} foregroundStyle="secondaryLabel" lineLimit={1}>{timeValue(m.fetchedAt)}</Text>
-  </>:<Text font={12} foregroundStyle="secondaryLabel">尚未导入，请打开脚本</Text>}
- </VStack>
+function Tile({state,compact=false,skin}:{state:CarrierState;compact?:boolean;skin?:CarrierStyle}){
+ return <CarrierContent state={state} compact={compact} skin={skin||getCarrierStyle(state.provider)}/>
 }
 /** Medium overview: 44pt carrier tabs and one readable detail panel. */
 function MediumOverview({states,state}:{states:CarrierState[];state:CarrierState}){
@@ -28,20 +20,7 @@ function MediumOverview({states,state}:{states:CarrierState[];state:CarrierState
     </Text>
    </Button>)}
   </HStack>
-  {m?<HStack spacing={14} frame={{maxWidth:'infinity',maxHeight:'infinity'}}>
-   <VStack alignment="leading" spacing={3} frame={{maxWidth:'infinity',alignment:'leading'}}>
-    <Text font={11} foregroundStyle="secondaryLabel">话费余额{state.stale?' · 缓存':''}</Text>
-    <Text font={26} fontWeight="semibold" monospacedDigit lineLimit={1} minScaleFactor={0.7}>{value(m.balance,'元')}</Text>
-    <Text font={11} foregroundStyle="secondaryLabel" lineLimit={1}>{timeValue(m.fetchedAt)}</Text>
-   </VStack>
-   <VStack alignment="leading" spacing={7} frame={{maxWidth:'infinity',alignment:'leading'}}>
-    <HStack><Text font={11} foregroundStyle="secondaryLabel">{state.provider==='telecom'?'通用流量':'剩余流量'}</Text><Spacer minLength={3}/><Text font={13} monospacedDigit lineLimit={1} minScaleFactor={0.8}>{flowValue(m.flowMB)}</Text></HStack>
-    <HStack><Text font={11} foregroundStyle="secondaryLabel">剩余语音</Text><Spacer minLength={3}/><Text font={13} monospacedDigit lineLimit={1} minScaleFactor={0.8}>{value(m.voice,'分钟')}</Text></HStack>
-   </VStack>
-  </HStack>:<VStack alignment="leading" spacing={5} frame={{maxWidth:'infinity',maxHeight:'infinity',alignment:'leading'}}>
-   <Text font={14} fontWeight="semibold">{providerNames[state.provider]}尚未导入</Text>
-   <Text font={11} foregroundStyle="secondaryLabel">请在脚本中从 BoxJS 导入；点上方标签查看其他运营商。</Text>
-  </VStack>}
+  <CarrierContent state={state} skin={getCarrierStyle(state.provider)} horizontal/>
  </VStack>
 }
 
@@ -65,7 +44,11 @@ async function main(){
   const active=states.find(s=>s.provider===readCarrier())||loaded[0]||states[0]
   view=<MediumOverview states={states} state={active}/>
  }
- else view=<Tile state={ordered[0]}/>
+ else {
+  const explicit=tokens.slice(1).join(" ")
+  const skin=carrierStyles.includes(explicit as CarrierStyle)?explicit as CarrierStyle:undefined
+  view=<Tile state={ordered[0]} skin={skin}/>
+ }
  Widget.present(<VStack padding={8} background="systemGroupedBackground">{view}</VStack>,{policy:'after',date:new Date(Date.now()+preferences().refresh*60000)})
 }
 main()

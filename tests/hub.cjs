@@ -13,6 +13,12 @@ const mobile={importFromBoxJS:async()=>['synthetic'],loadAccount:async()=>{throw
 const m={exports:{}};const context={module:m,exports:m.exports,require:name=>name==='scripting'?scripting:mobile,Storage:{get:k=>store[k],set:(k,v)=>store[k]=v},Keychain:{get:k=>keychain[k],set:(k,v)=>keychain[k]=v},Date};vm.runInNewContext(source,context);
 (async()=>{
  const hub=m.exports;
+ assert.equal(hub.getCarrierStyle('telecom'),'全景');
+ const credentialsBefore=JSON.stringify(keychain);
+ hub.setCarrierStyle('telecom','账单卡');hub.setCarrierStyle('unicom','大字余额');
+ assert.equal(hub.getCarrierStyle('telecom'),'账单卡');assert.equal(hub.getCarrierStyle('unicom'),'大字余额');assert.equal(hub.getCarrierStyle('broadnet'),'全景');
+ assert.throws(()=>hub.setCarrierStyle('telecom','unknown'));assert.equal(JSON.stringify(keychain),credentialsBefore);
+
  assert.throws(()=>hub.savePreferences('evil.test',120));
  const raw=JSON.parse(envelope.val);for(const p of ['unicom','telecom'])raw.accounts[p]={metrics:{provider:p,balance:3,flowMB:512,fetchedAt:1},request:null,queryReady:false};envelope={val:JSON.stringify(raw)};
  const summary=await hub.importAll();for(const p of ['中国联通','中国电信','中国广电'])assert.ok(summary.includes(p));

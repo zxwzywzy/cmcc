@@ -70,3 +70,15 @@ export async function loadAll(force=false){return Promise.all(providerIds.map(p=
 export function value(n:number|undefined,unit:string){return typeof n==='number'&&Number.isFinite(n)?(unit==='元'?n.toFixed(2):n.toFixed(n%1?2:0))+' '+unit:'—'}
 export function flowValue(n:number|undefined){return n===undefined?'—':Math.abs(n)>=1024?value(n/1024,'GB'):value(n,'MB')}
 export function timeValue(n:number|undefined){return n?new Date(n).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'尚无数据'}
+
+export const carrierStyles = ['全景', '账单卡', '大字余额'] as const
+export type CarrierStyle = typeof carrierStyles[number]
+const STYLE_KEY='carrier.hub.styles.v1'
+export function getCarrierStyle(provider:Provider):CarrierStyle {
+ try{const saved=JSON.parse(store.get<string>(STYLE_KEY)||'{}')[provider];return carrierStyles.includes(saved)?saved:'全景'}catch{return '全景'}
+}
+export function setCarrierStyle(provider:Provider,style:CarrierStyle){
+ if(!providerIds.includes(provider)||!carrierStyles.includes(style))throw Error('不支持的运营商样式')
+ let saved:Record<string,string>={};try{saved=JSON.parse(store.get<string>(STYLE_KEY)||'{}')}catch{}
+ store.set(STYLE_KEY,JSON.stringify({...saved,[provider]:style}))
+}
