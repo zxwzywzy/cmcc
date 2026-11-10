@@ -1,7 +1,7 @@
 {
   "name": "carrier-balance-widget",
   "private": true,
-  "version": "0.1.4",
+  "version": "0.1.5",
   "scripts": {
     "build": "node tools/build.cjs",
     "test": "node tests/carrier.cjs && node tests/hub.cjs && node tests/widget-routing.cjs && node tests/carrier-intent.cjs"

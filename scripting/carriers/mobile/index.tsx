@@ -49,7 +49,7 @@ declare const Safari: { openURL(url: string): Promise<boolean> }
 
 const BRANCH = 'main'
 const REMOTE_META = `https://raw.githubusercontent.com/zxwzywzy/cmcc/${BRANCH}/scripting/carriers/script.json`
-const PACKAGE_URL = `https://raw.githubusercontent.com/zxwzywzy/cmcc/${BRANCH}/packages/carriers.zip`
+const PACKAGE_URL = `https://raw.githubusercontent.com/zxwzywzy/cmcc/${BRANCH}/packages/`
 const HOMEPAGE = 'https://github.com/zxwzywzy/cmcc/tree/main/scripting/carriers'
 const BG_PATH = () => Path.join(FileManager.appGroupDocumentsDirectory, 'cmcc', 'background.jpg')
 
@@ -612,7 +612,7 @@ function SettingsTab(props: Shared & { close: any }) {
       const ok = await Dialog.confirm({ title: `发现新版本 ${remote}`, message: `当前 ${version}, 账号和历史都会保留`, cancelLabel: '稍后', confirmLabel: '更新' })
       if (!ok) return
       setUpdateText('更新中...')
-      await installUpdate(PACKAGE_URL + "?v=" + encodeURIComponent(remote))
+      await installUpdate(PACKAGE_URL + "carriers-" + encodeURIComponent(remote) + ".zip")
       Widget.reloadAll()
       await Dialog.alert({ title: `已更新到 ${remote}`, message: '点确定退出, 重新打开 cmcc 生效' })
       Script.exit()
