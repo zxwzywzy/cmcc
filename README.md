@@ -22,8 +22,8 @@ https://raw.githubusercontent.com/zxwzywzy/cmcc/main/Paperclip-Cookie-Quantumult
 
 ## 保留的行为
 
-- 原始 33 条逻辑规则：30 条请求、3 条响应，12 条需要 body；合并相同 URL 的分发后为 31 条重写。
-- 保留全部 32 个 MITM 域名及正则大小写不敏感标志。
+- 原始 Paperclip 33 条逻辑规则加广电试用规则，共 34 条：31 条请求、3 条响应，13 条需要 body；合并相同 URL 的分发后为 32 条重写。
+- 保留原有 32 个 MITM 域名及正则大小写不敏感标志，并加入广电 app.10099.com.cn，共 33 个域名。
 - 龙湖根据 x-lf-channel 精确匹配 L0 / C2，不匹配则跳过。
 - 北京华联仅在 Referer 包含 wx1b1dda695dff82c8 时执行；龙德广场原规则没有条件，保持无条件执行，所以该 Referer 命中时两份脚本均执行。分发器隔离变量并聚合完成回调。
 - requires_body=true 转成 script-request-body / script-response-body；其余为 script-request-header。
@@ -54,7 +54,7 @@ https://raw.githubusercontent.com/zxwzywzy/cmcc/main/ChinaBroadnet-App-Cookie.co
 
 使用 script-request-body 保留可能必需的请求体；空 body 不触发是圈 X 的限制。请求捕获路径暂不扩到所有域名或登录接口。抓到后关闭本独立订阅。如无提示，请先反馈“无提示”；进一步定位只需脱敏后的请求域名、路径、请求方法和字段名称，不要公开 Cookie/Token 或完整抓包。
 
-此功能独立发布，未直接并入 Paperclip 合集，避免试用规则影响现有已配置项目。通过 JavaScript 语法检查和 7 个模拟保存/去重/范围/过滤/失败用例，仍需用户设备验证。
+广电试用规则已合并至 Paperclip Cookie 合集：更新原合集订阅即可使用。若已添加广电独立订阅，请关闭它，避免重复抓取。合并仅涉及 Cookie 抓取规则，不添加自动签到任务。通过 JavaScript 语法检查和 7 个模拟保存/去重/范围/过滤/失败用例，仍需用户设备验证。
 
 参考：
 - https://github.com/wuhuhuuuu/study/blob/main/Scripts/ChinaBroadnet/ChinaBroadnet.cookie.js
