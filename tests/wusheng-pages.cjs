@@ -5,3 +5,11 @@ for(const family of ['systemSmall','systemMedium','systemLarge']){const seen=new
 assert.equal(p.servicePage(undefined,'systemMedium').count,1);assert.equal(p.servicePage(undefined,'systemMedium').rows.length,0);
 const fs=require('node:fs'),index=fs.readFileSync('scripting/wusheng-bus/index.tsx','utf8');assert.match(index,/title="更新脚本"/);assert.match(index,/Script.createImportScriptsURLScheme/);assert.match(index,/packages\/wusheng-bus.scripting/);
 console.log('PASS all 19 routes reachable at every size, next/previous wrapping, station-change reset, stale click ignored, update button uses official importer.');
+
+const d={stop:{id:'directions'},services:[{choice:{line:{id:'101'},direction:1}},{choice:{line:{id:'101'},direction:2}},{choice:{line:{id:'102'},direction:1}}]};
+assert.equal(p.servicePage(d,'systemMedium','1').routeCount,2);assert.equal(p.servicePage(d,'systemMedium','2').index,1);
+p.switchDirection(d,'systemMedium','directions','1');assert.equal(p.servicePage(d,'systemMedium','1').direction,1);assert.equal(p.servicePage(d,'systemMedium','1').total,2);assert.equal(p.servicePage(d,'systemMedium','2').direction,0);
+p.switchDirection(d,'systemMedium','directions','1');assert.equal(p.servicePage(d,'systemMedium','1').direction,2);assert.equal(p.servicePage(d,'systemMedium','1').total,1);
+p.switchDirection(d,'systemMedium','directions','1');assert.equal(p.servicePage(d,'systemMedium','1').direction,0);assert.equal(p.servicePage(d,'systemMedium','1').total,3);
+assert.equal(p.stackSlot('叠放2'),'2');assert.equal(p.stackSlot('叠放10'),'10');assert.equal(p.stackSlot('叠放11'),'');
+console.log('PASS unique line count, direction cycle and per-stack isolation, initial stack page offsets.');

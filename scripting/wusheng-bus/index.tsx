@@ -45,7 +45,8 @@ function Home(){
  <Section header={<Text>乘车码</Text>} footer={<Text>点击进入取码页，使用本机导入的微信授权和当前位置请求。不会把二维码缓存到桌面；取码失败可回微信使用。</Text>}><Button title="获取 / 刷新乘车码" action={async()=>{await Navigation.present({element:<RidePage auto/>})}}/></Section>
  <Section header={<Text>账号如何登录</Text>}><Text>武胜公交小程序使用微信登录，再授权绑定手机号。目前这里导入的是你已登录微信的授权，不是另建账号，也不是用脚本发送验证码。独立手机号验证码登录尚未发现可用接口。</Text></Section>
  <Section header={<Text>添加桌面组件</Text>}><Text>长按桌面 → 添加 Scripting 小组件 → 编辑小组件 → 选择“武胜公交”。参数留空，支持小、中、大尺寸。到站查询不需要账号，公交卡余额需要导入账号。</Text></Section>
- <Section header={<Text>脚本更新 · 0.2.1</Text>} footer={<Text>打开 Scripting 官方导入页后，确认覆盖同名“武胜公交”。更新后重新运行脚本并刷新桌面组件。</Text>}><Button title="更新脚本" action={async()=>{await Safari.openURL(Script.createImportScriptsURLScheme(['https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus.scripting']))}}/></Section>
+ <Section header={<Text>组件叠放</Text>}><Text>添加多个同尺寸 Scripting 组件，均选择“武胜公交”，参数分别填写“叠放1”“叠放2”等，再在桌面把组件拖到一起。各层默认显示不同线路页，页码与换向分别保存；普通单个组件仍可留空参数。</Text></Section>
+ <Section header={<Text>脚本更新 · 0.2.2</Text>} footer={<Text>打开 Scripting 官方导入页后，确认覆盖同名“武胜公交”。更新后重新运行脚本并刷新桌面组件。</Text>}><Button title="更新脚本" action={async()=>{await Safari.openURL(Script.createImportScriptsURLScheme(['https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus.scripting']))}}/></Section>
  </List>
 }
 async function main(){if(Script.queryParameters?.page==='ride'){await presentRide();return}await Navigation.present({element:<Home/>});Script.exit()}

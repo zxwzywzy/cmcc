@@ -1,6 +1,6 @@
 export type Line={id:string;name:string;start:string;end:string}
 export type Station={id:string;name:string;no:number;distance?:number;latitude?:number;longitude?:number}
-export type Choice={line:Line;direction:number;station:Station}
+export type Choice={line:Line;direction:number;station:Station;destination?:string}
 export type Arrival={stops:number;minutes?:number;atStation:boolean}
 export function text(v:unknown){return typeof v==='string'?v:typeof v==='number'?String(v):''}
 export function finite(v:unknown):number|undefined{if(v===null||v===undefined||v===''||typeof v==='boolean')return undefined;const n=Number(v);return Number.isFinite(n)?n:undefined}
