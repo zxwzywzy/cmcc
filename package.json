@@ -6,7 +6,7 @@
     "build": "node tools/build.cjs",
     "test": "node tests/carrier.cjs && node tests/hub.cjs && node tests/widget-routing.cjs && node tests/carrier-intent.cjs && node tests/carrier-title.cjs && node tests/unicom-risksync.cjs && node tests/panorama-progress.cjs && node tests/carrier-layout-matrix.cjs && node tests/carrier-history.cjs && node tests/carrier-extra.cjs && node tests/telecom-login.cjs && node tests/account-pages.cjs && node tests/telecom-sms.cjs",
     "build:bus": "node tools/build-bus.cjs",
-    "test:bus": "node tests/wusheng-widget.cjs",
+    "test:bus": "node tests/wusheng-widget.cjs && node tests/wusheng-nearby.cjs && node tests/wusheng-nearby-view.cjs",
     "package:bus": "python tools/package-bus.py"
   },
   "devDependencies": {

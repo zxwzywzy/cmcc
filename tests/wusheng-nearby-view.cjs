@@ -1,0 +1,8 @@
+const esbuild=require('esbuild'),vm=require('node:vm'),assert=require('node:assert/strict');
+const m={exports:{}},code=esbuild.buildSync({entryPoints:['scripting/wusheng-bus/nearby-view.tsx'],bundle:true,format:'cjs',platform:'neutral',jsxFactory:'h',external:['scripting'],write:false,logOverride:{'impossible-typeof':'silent'}}).outputFiles[0].text;
+const sdk=new Proxy({Script:{name:'Wusheng Bus',createRunURLScheme:(n,p)=>'scripting://run/'+n+'?page='+p.page},AppIntentManager:{register:()=>()=>({intent:true})},AppIntentProtocol:{AppIntent:0}},{get:(o,k)=>k in o?o[k]:String(k)});
+vm.runInNewContext(code,{module:m,exports:m.exports,require:n=>n==='scripting'?sdk:require(n),h:(type,props,...children)=>typeof type==='function'?type({...props,children}):({type,props,children}),Date,Storage:{get:()=>undefined}});
+function flat(n){if(n==null)return '';if(Array.isArray(n))return n.map(flat).join(' ');return typeof n==='object'?String(n.props?.title||'')+' '+flat(n.children):String(n)}
+const snapshot={stop:{name:'武胜客运中心站',meters:123},time:Date.now(),otherStops:[{name:'邻近站',meters:300}],services:[{choice:{line:{name:'101'},direction:1},items:[{stops:2}],positions:[{stationName:'上一站'}]}]};
+for(const family of ['systemSmall','systemMedium','systemLarge']){const view=m.exports.NearbyView({snapshot,family,interactive:true});const s=flat(view);assert.match(s,/武胜客运中心站/);assert.match(s,/123 米/);assert.match(s,/101 上行/);assert.match(s,/刷新/);assert.match(s,/乘车码/);if(family!=='systemSmall')assert.match(s,/车辆近上一站/);assert.match(flat(m.exports.NearbyView({family})),/定位查最近站台/)}
+console.log('PASS three nearby widget sizes, station/distance/vehicle content, refresh intent and ride-code link, empty state. Native rendering still requires iPhone.');

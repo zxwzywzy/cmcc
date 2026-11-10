@@ -4,7 +4,7 @@ import { readAccount,type Account } from './account'
 import { normalizeLines,normalizeStations,normalizeAccount,arrivals,type Choice,type Station } from './model'
 const parse=JSONBig({storeAsString:true,protoAction:'ignore',constructorAction:'ignore'}).parse
 const API='https://wsapi.wskyzx.com:26110'
-const paths=new Set(['/api/AppBusiness/GetBusLine','/api/AppBusiness/GetBusLineStationsByLId','/api/WechatInfo/GetUserInfo'])
+const paths=new Set(['/api/AppBusiness/GetBusLine','/api/AppBusiness/GetBusLineStationsByLId','/api/WechatInfo/GetUserInfo','/api/AppBusiness/GetBusStations','/api/AppBusiness/GetPayRrcode'])
 export async function post(path:string,data:any,account?:Account){
  if(!paths.has(path))throw Error('不支持此查询')
  try{const r=await fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json',...(account?{Authorization:account.authorization}:{})},body:JSON.stringify(data),redirect:'error'});if(!r.ok)throw Error();return parse(await r.text())}catch{throw Error('公交网络查询失败，请稍后重试')}
@@ -15,12 +15,13 @@ export async function balance(a=readAccount()){if(!a)throw Error('请先导入�
 export function choice():Choice|undefined{return Storage.get<Choice>('wusheng.bus.choice')||undefined}
 export function saveChoice(c:Choice){Storage.set('wusheng.bus.choice',c);Storage.set('wusheng.bus.arrival',null)}
 export type BusSnapshot={choice:Choice;items:ReturnType<typeof arrivals>;time:number;stale?:boolean;message?:string}
-export function vehicles(lineId:string,direction:number):Promise<any[]>{
+export function vehicles(lineId:string,direction:number){return vehicleBatch([{lineId,upOrDown:direction}])}
+export function vehicleBatch(queries:{lineId:string;upOrDown:number}[]):Promise<any[]>{
  return new Promise((resolve,reject)=>{
   let settled=false,ws:WebSocket|undefined
   const finish=(rows?:any[])=>{if(settled)return;settled=true;clearTimeout(timer);try{ws?.close()}catch{};rows?resolve(rows):reject(Error('实时车辆通道暂不可用'))}
   const timer=setTimeout(()=>finish(),6500)
-  try{ws=new WebSocket('wss://wsdata.wskyzx.com:25790/ws');ws.onopen=()=>{try{ws!.send(JSON.stringify([{lineId,upOrDown:direction}]))}catch{finish()}};ws.onmessage=message=>{if(typeof message!=='string')return;try{const d=parse(message);if(Array.isArray(d))finish(d)}catch{}};ws.onerror=()=>finish();ws.onclose=()=>finish()}catch{finish()}
+  try{ws=new WebSocket('wss://wsdata.wskyzx.com:25790/ws');ws.onopen=()=>{try{ws!.send(JSON.stringify(queries))}catch{finish()}};ws.onmessage=message=>{if(typeof message!=='string')return;try{const d=parse(message);if(Array.isArray(d))finish(d)}catch{}};ws.onerror=()=>finish();ws.onclose=()=>finish()}catch{finish()}
  })
 }
 export async function current():Promise<BusSnapshot|undefined>{

@@ -1,7 +1,7 @@
 {
   "name": "Wusheng Bus",
-  "version": "0.1.0",
-  "description": "武胜公交到站与公交卡余额小组件；动态乘车码仍在微信中使用",
+  "version": "0.2.0",
+  "description": "当前位置附近站台、车辆所在站与地图；点击前台获取乘车码（出码待真机验证）",
   "author": {
     "name": "zxwzywzy"
   },
@@ -13,5 +13,5 @@
     "zh": "武胜公交",
     "en": "Wusheng Bus"
   },
-  "remoteResource": "https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus-0.1.0.zip"
+  "remoteResource": "https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus-0.2.0.zip"
 }

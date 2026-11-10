@@ -1,0 +1,25 @@
+const assert=require('node:assert/strict'),vm=require('node:vm'),esbuild=require('esbuild');
+const memory={};let position={latitude:30.3,longitude:106.3,timestamp:Date.now()},fail=false,posts=0,ws=0;
+const route={lineId:'1135524964556869651',lineName:'101',upOrDown:1,stationsId:'1000000000000000002',stationsNo:2,stationsList:[{stationId:'1000000000000000001',stationName:'上一站',stationNo:1,distance:0,latitude:30.301,longitude:106.3},{stationId:'1000000000000000002',stationName:'最近站台',stationNo:2,distance:500,latitude:30.302,longitude:106.3}]};
+const response={code:0,data:{data:[{stationId:'2000000000000000002',stationName:'较远站',len:400,latitude:30.302,longitude:106.3,lineDatas:[]},{stationId:'2000000000000000001',stationName:'最近站台',stationNo:999,len:100,latitude:30.301,longitude:106.3,lineDatas:[route]}]}};
+const api={post:async()=>{posts++;if(fail)throw Error('network');return response},vehicleBatch:async()=>{ws++;return [{lineId:route.lineId,bizType:1,stationNo:1,speed:30}]}};
+function load(entry,extra={}){const m={exports:{}},code=esbuild.buildSync({entryPoints:[entry],bundle:true,format:'cjs',platform:'neutral',external:['scripting','./api'],write:false,logOverride:{'impossible-typeof':'silent'}}).outputFiles[0].text;vm.runInNewContext(code,{module:m,exports:m.exports,require:n=>n==='./api'?api:n==='scripting'?{}:require(n),Location:{requestCurrent:async()=>position,isAuthorizedForWidgetUpdates:true},Storage:{get:k=>memory[k],set:(k,v)=>memory[k]=v},setTimeout,clearTimeout,Date,...extra});return m.exports}
+(async()=>{
+ const near=load('scripting/wusheng-bus/nearby.ts');assert.equal(await near.nearbyCurrent(),undefined);assert.equal(posts,0);
+ const list=near.normalizeNearby(response);assert.equal(list[0].name,'最近站台');assert.equal(list[0].services[0].choice.station.no,2);assert.equal(list[0].services[0].choice.station.id,route.stationsId);
+ const snap=await near.nearbyCurrent({enable:true});assert.equal(snap.stop.name,'最近站台');assert.equal(snap.services[0].items[0].stops,1);assert.equal(snap.services[0].positions[0].stationName,'上一站');assert.equal(snap.services[0].positions[0].gps,false);assert.equal(snap.services[0].positions[0].coordinate.latitude,30.301);assert.equal(ws,1);
+ fail=true;const cached=await near.nearbyCurrent();assert.equal(cached.stale,true);assert.equal(cached.time,snap.time);
+ position={...position,latitude:31,timestamp:Date.now()};const moved=await near.nearbyCurrent();assert.equal(moved.stale,true);assert.equal(moved.services.length,0);assert.equal(moved.stop,undefined);
+ position={...position,timestamp:Date.now()-20*60000};await assert.rejects(()=>near.freshPosition(),/近期定位/);
+ near.clearNearby();assert.equal(memory['wusheng.bus.nearby.v1'],null);assert.equal(memory['wusheng.bus.location.enabled'],false);
+ const images=[];const ride=load('scripting/wusheng-bus/ride.ts',{UIImage:{fromBase64String:s=>{images.push(s);return {image:true}},fromURL:u=>({url:u})}});
+ assert.ok(await ride.rideImage('data:image/png;base64,iVBORw0KGgo='));await assert.rejects(()=>ride.rideImage('invented-qr-text'),/尚未适配/);await assert.rejects(()=>ride.rideImage('https://example.com/qr.png'),/尚未适配/);await assert.rejects(()=>ride.rideImage('http://wsapi.wskyzx.com/qr.png'),/尚未适配/);
+
+ position={latitude:30.3,longitude:106.3,timestamp:Date.now()};fail=false
+ const authenticated=load('scripting/wusheng-bus/ride.ts',{Keychain:{get:()=>JSON.stringify({authorization:'Bearer SYNTHETIC_TEST_TOKEN_12345',userId:'1234567890'})},UIImage:{fromBase64String:s=>({image:true}),fromURL:u=>({url:u})}})
+ api.post=async(path,body)=>{assert.equal(path,'/api/AppBusiness/GetPayRrcode');assert.equal(body.latitude,30.3);return {code:0,data:{qrcode:'data:image/png;base64,iVBORw0KGgo='}}}
+ const before=JSON.stringify(memory);assert.ok(await authenticated.requestRideImage());assert.equal(JSON.stringify(memory),before)
+ api.post=async()=>({code:500,data:null});await assert.rejects(()=>authenticated.requestRideImage(),/服务未返回/)
+ const fs=require('node:fs'),widget=fs.readFileSync('scripting/wusheng-bus/widget.tsx','utf8'),qr=fs.readFileSync('scripting/wusheng-bus/ride.ts','utf8'),page=fs.readFileSync('scripting/wusheng-bus/ride-page.tsx','utf8');assert.doesNotMatch(widget,/requestRideImage|GetPayRrcode/);assert.doesNotMatch(qr,/Storage\.set|Keychain\.set|console\./);assert.match(page,/setImage\(undefined\);setBusy\(true\)/);assert.match(page,/setTimeout/);
+ console.log('PASS nearby sorting, route-specific station IDs/numbers, location permissions and expiry, no vehicle ghost pins, cache movement isolation, station-position labeling, QR image validation and foreground-only/no-storage code path.');
+})().catch(e=>{console.error(e);process.exitCode=1});
