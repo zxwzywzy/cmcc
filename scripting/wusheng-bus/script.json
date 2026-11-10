@@ -1,6 +1,6 @@
 {
   "name": "Wusheng Bus",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "当前位置附近站台、车辆所在站与地图；点击前台获取乘车码（出码待真机验证）",
   "author": {
     "name": "zxwzywzy"
@@ -13,5 +13,5 @@
     "zh": "武胜公交",
     "en": "Wusheng Bus"
   },
-  "remoteResource": "https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus-0.2.0.zip"
+  "remoteResource": "https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus.zip"
 }

@@ -1,6 +1,14 @@
-# 武胜公交 · Scripting 0.2.0 试用版
+# 武胜公交 · Scripting 0.2.1 试用版
 
-[下载 .scripting 安装包](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus-0.2.0.scripting) · [ZIP 备用包](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus-0.2.0.zip)
+[下载 .scripting 安装包](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus-0.2.1.scripting) · [ZIP 备用包](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus-0.2.1.zip)
+
+## 本次新增
+
+首页底部“脚本更新”区域提供 **更新脚本** 按钮。点击后打开 Scripting 内置导入页，确认覆盖同名“武胜公交”。稳定下载地址为 `packages/wusheng-bus.scripting`，后续发布同步更新此文件，无需修改链接；安装器仍由用户确认更新。
+
+最近站台不再截取前八个线路方向。每个线路方向保留一项，显示上报的车辆所在站；没有位置时明确提示。桌面用“上页/下页”翻页，小号用“下页”循环；脚本“全部线路与实时站点 / 地图”展示完整列表。站台切换后页码从头开始，过时站台的翻页点击不修改当前页。缺失站点明细时保留该线路，而不是丢弃。
+
+自动测试覆盖19项线路在三尺寸下均可到达、翻页首尾循环、站台切换和过时点击；公共站点实测成功订阅23个线路方向，测试时车辆为空。原生分页按钮仍需iPhone验证。
 
 ## 怎么使用
 
@@ -42,7 +50,7 @@
 ## 其他边界
 
 - 固定线路/方向/候车站仍可选；选择后切为固定站台模式，点击定位按钮可切回附近模式。
-- 前八个线路方向订阅实时通道，桌面按尺寸显示其中一至四条；仅显示有依据的站数，粗略分钟仅在速度/站距完整时推算。
+- 最近站台全部有效线路方向订阅实时通道，不再限制前八个；桌面小/中/大每页显示一/二/四项，用翻页查看全部，上下行分开列出；仅显示有依据的站数，粗略分钟仅在速度/站距完整时推算。
 - 余额只使用已核对的 cardCashfee 分单位换算为元；未返回与零分开显示，失败标记上次数据。
 - 账号文件和口令请勿公开。取码能力不代表可代替官方支付或充值流程。
 
@@ -60,4 +68,4 @@ HTTPS 主机 `https://wsapi.wskyzx.com:26110`，接口白名单：`GetBusLine`�
 
 自动检查：零/缺失余额、线路方向与站数、跨语言加密导入、篡改拒绝、三尺寸视图结构、附近排序、按线路匹配站点编号、旧定位拒绝、跨位置缓存隔离、站点图钉与GPS区分、二维码图片校验、前台限定与不落盘。
 
-Windows 没有 iOS Scripting 原生运行环境：字体间距、定位权限、设备地图、二维码图片实际格式、桌面按钮和刷新仍需真机验证。0.1.0 旧包保留，但应使用本版。
+Windows 没有 iOS Scripting 原生运行环境：字体间距、定位权限、设备地图、二维码图片实际格式、桌面按钮和刷新仍需真机验证。旧版安装包保留，但应使用本版。

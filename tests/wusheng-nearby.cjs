@@ -7,11 +7,12 @@ function load(entry,extra={}){const m={exports:{}},code=esbuild.buildSync({entry
 (async()=>{
  const near=load('scripting/wusheng-bus/nearby.ts');assert.equal(await near.nearbyCurrent(),undefined);assert.equal(posts,0);
  const list=near.normalizeNearby(response);assert.equal(list[0].name,'最近站台');assert.equal(list[0].services[0].choice.station.no,2);assert.equal(list[0].services[0].choice.station.id,route.stationsId);
+ const many=JSON.parse(JSON.stringify(response));many.data.data[1].lineDatas=Array.from({length:19},(_,i)=>({...route,lineId:String(1135524964556869600n+BigInt(i)),lineName:'线路'+i}));const oldPost=api.post;api.post=async()=>many;const all=await near.nearbyCurrent({enable:true});assert.equal(all.services.length,19);api.post=oldPost;ws=0;
  const snap=await near.nearbyCurrent({enable:true});assert.equal(snap.stop.name,'最近站台');assert.equal(snap.services[0].items[0].stops,1);assert.equal(snap.services[0].positions[0].stationName,'上一站');assert.equal(snap.services[0].positions[0].gps,false);assert.equal(snap.services[0].positions[0].coordinate.latitude,30.301);assert.equal(ws,1);
  fail=true;const cached=await near.nearbyCurrent();assert.equal(cached.stale,true);assert.equal(cached.time,snap.time);
  position={...position,latitude:31,timestamp:Date.now()};const moved=await near.nearbyCurrent();assert.equal(moved.stale,true);assert.equal(moved.services.length,0);assert.equal(moved.stop,undefined);
  position={...position,timestamp:Date.now()-20*60000};await assert.rejects(()=>near.freshPosition(),/近期定位/);
- near.clearNearby();assert.equal(memory['wusheng.bus.nearby.v1'],null);assert.equal(memory['wusheng.bus.location.enabled'],false);
+ near.clearNearby();assert.equal(memory['wusheng.bus.nearby.v2'],null);assert.equal(memory['wusheng.bus.location.enabled'],false);
  const images=[];const ride=load('scripting/wusheng-bus/ride.ts',{UIImage:{fromBase64String:s=>{images.push(s);return {image:true}},fromURL:u=>({url:u})}});
  assert.ok(await ride.rideImage('data:image/png;base64,iVBORw0KGgo='));await assert.rejects(()=>ride.rideImage('invented-qr-text'),/尚未适配/);await assert.rejects(()=>ride.rideImage('https://example.com/qr.png'),/尚未适配/);await assert.rejects(()=>ride.rideImage('http://wsapi.wskyzx.com/qr.png'),/尚未适配/);
 

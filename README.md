@@ -1,8 +1,8 @@
 # Paperclip Cookie · Quantumult X
 
-## 新增：武胜公交 Scripting 小组件（0.2.0 试用版）
+## 新增：武胜公交 Scripting 小组件（0.2.1 试用版）
 
-[下载安装包](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus-0.2.0.scripting) · [安装说明与验证范围](scripting/wusheng-bus/README.md)
+[下载安装包](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus-0.2.1.scripting) · [安装说明与验证范围](scripting/wusheng-bus/README.md)
 
 根据当前位置查最近站台、距离与车辆上报的所在站；支持小中大尺寸，参数留空。点击打开前台取码页请求新码，成功出码尚待手机真实定位验证。登录沿用本人微信手机号授权的加密导入，不含独立短信登录。个人凭据不在公开包中。
 
