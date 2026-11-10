@@ -60,7 +60,7 @@ export async function importAll(hostOverride?:string):Promise<string>{
    cookieMessage=result.metrics&&!result.stale?'联通 riskSync Cookie 已导入并查到数据':'联通 riskSync Cookie 已导入；余量查询尚未成功'
   }
  }catch{}
- let diagnostics='' 
+ let diagnostics=''
  try{
   const res=await fetch(`https://${host}/query/data/carrier_hub_diagnostics_v1`)
   if(res.ok){
