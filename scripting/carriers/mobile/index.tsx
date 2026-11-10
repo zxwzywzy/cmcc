@@ -654,4 +654,3 @@ function SettingsTab(props: Shared & { close: any }) {
 }
 
 // Main entry is at ../index.tsx.
-
