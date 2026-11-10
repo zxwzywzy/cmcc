@@ -1,12 +1,14 @@
 # Paperclip Cookie · Quantumult X
 
-## 新增：四家运营商余量小组件（0.2.0 样式更新）
+## 新增：四家运营商余量小组件（0.2.1 账号与抓取更新）
 
-- [下载 Scripting 安装包](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/carriers-0.2.0.zip)
-- [配套圈 X 抓取订阅](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/Carrier-Hub-Cookie-v0.1.8.conf)
+- [下载 Scripting 安装包](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/carriers-0.2.1.zip)
+- [配套圈 X 抓取订阅](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/Carrier-Hub-Cookie-v0.2.1.conf)
 - [安装步骤与当前限制](scripting/carriers/README.md)
 
-0.2.0 新增大、中、小号共享样式和跨运营商双号对照。在“运营商”页选择尺寸与样式，桌面参数留空即可使用；大号另有“四家总览”。移动蓝、联通红、电信紫、广电绿用于区分运营商。此更新不代表电信、广电抓取与查询已通过真机验证。
+0.2.1 删除重复“运营商”底栏，将四家概览、导入、样式与移动号码详情统一到“账号”。联通按成功响应增加可用积分、套餐名称、短信和套餐资源明细；部分接口不返回这些字段时不猜测。电信修正诊断规则与正文规则重叠，并支持只抓到 Token 鉴权请求后导入尝试查询。真机抓取与在线查询仍需确认。
+
+历史更新：0.2.0 新增大、中、小号共享样式和跨运营商双号对照。在“运营商”页选择尺寸与样式，桌面参数留空即可使用；大号另有“四家总览”。移动蓝、联通红、电信紫、广电绿用于区分运营商。此更新不代表电信、广电抓取与查询已通过真机验证。
 
 历史更新：0.1.6 中号在原全景左上角运营商名称处切换，预览也可点；联通、电信、广电各自可设置全景、账单卡、大字余额；中号总览支持标签切换并读取对应样式；统一四家导入入口；已恢复原样式库、外观和默认参数；移动沿用原查询和 12 种样式，四家概览改用“总览”参数；联通、电信、广电新增统一余量视图、BoxJS 导入及白名单查询请求重用。新增三家均待真机验证，广电 App 接口仍属待验证适配；不承诺安装即可查询成功。只有快照时明确标记为旧数据，不包含自动签到。
 

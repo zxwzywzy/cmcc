@@ -4,7 +4,7 @@ import { CarrierLayout } from './carrier-layout'
 import { familyNames, type CarrierFamily } from './carrier-design'
 import { readCarrier, nextCarrier, selectCarrier } from './app_intents'
 import type { Provider } from './hub'
-export function CarrierOverview(){
+export function CarrierOverview({mobileAccounts,close,onImported}:{mobileAccounts?:any;close?:any;onImported?:()=>Promise<void>}={}){
  const dismiss=Navigation.useDismiss()
  const [states,setStates]=useState<CarrierState[]>([])
  const [busy,setBusy]=useState(false)
@@ -17,14 +17,15 @@ export function CarrierOverview(){
  async function refresh(force=false){
   if(busy)return
   setBusy(true)
-  try{setStates(await loadAll(force))}catch{setNote('读取失败，请重试')}finally{setBusy(false)}
+  try{setStates(await loadAll(force));if(force)await onImported?.()}catch{setNote('读取失败，请重试')}finally{setBusy(false)}
  }
  async function doImport(){
   setBusy(true)
-  try{savePreferences(host,120);setNote(await importAll());setStates(await loadAll());Widget.reloadAll()}
+  try{savePreferences(host,120);setNote(await importAll());setStates(await loadAll());await onImported?.();Widget.reloadAll()}
   catch(e){setNote((e as Error).message)}finally{setBusy(false)}
  }
- return <NavigationStack><List navigationTitle="运营商余量" navigationBarTitleDisplayMode="large" toolbar={{cancellationAction:<Button title="关闭" action={dismiss}/>}}>
+ return <List navigationTitle="账号" navigationBarTitleDisplayMode="large" toolbar={{cancellationAction:close||<Button title="关闭" action={dismiss}/>}}>
+  {mobileAccounts}
   <Section header={<Text>组件尺寸</Text>} footer={<Text>每家运营商分别保存小、中、大号样式，桌面参数留空自动使用。</Text>}>
    <Picker title="尺寸" value={family} onChanged={setFamily} pickerStyle="segmented"><Text tag="systemSmall">小号</Text><Text tag="systemMedium">中号</Text><Text tag="systemLarge">大号</Text></Picker>
   </Section>
@@ -41,22 +42,29 @@ export function CarrierOverview(){
      <HStack><Text>余额</Text><Spacer/><Text monospacedDigit>{value(m?.balance,'元')}</Text></HStack>
      <HStack><Text>{p==='telecom'?'通用剩余流量':'剩余流量'}</Text><Spacer/><Text monospacedDigit>{flowValue(m?.flowMB)}</Text></HStack>
      <HStack><Text>剩余语音</Text><Spacer/><Text monospacedDigit>{value(m?.voice,'分钟')}</Text></HStack>
+     {m?.packageName?<HStack><Text>套餐</Text><Spacer/><Text foregroundStyle="secondaryLabel">{m.packageName}</Text></HStack>:null}
+     {p==='unicom'?<HStack><Text>可用积分</Text><Spacer/><Text monospacedDigit>{value(m?.points,'分')}</Text></HStack>:null}
+     {m?.sms!==undefined?<HStack><Text>剩余短信</Text><Spacer/><Text monospacedDigit>{value(m.sms,'条')}</Text></HStack>:null}
+     {m?.resourceDetails?.length?<NavigationLink destination={<ResourceDetails state={s!}/>}><Text>套餐资源明细 · {m.resourceDetails.length} 项</Text></NavigationLink>:null}
      <Text font="caption" foregroundStyle="secondaryLabel">{s?.message||timeValue(m?.fetchedAt)}</Text>
      {m&&s?.message?<Text font="caption" foregroundStyle="secondaryLabel">{timeValue(m.fetchedAt)}</Text>:null}
-     {m?<Button title="移除此运营商数据" role="destructive" disabled={busy} action={async()=>{forget(p);await refresh();Widget.reloadAll()}}/>:null}
+     {m?<Button title="移除此运营商数据" role="destructive" disabled={busy} action={async()=>{forget(p);await refresh();await onImported?.();Widget.reloadAll()}}/>:null}
     </VStack>
    })}
   </Section>
-  <Section header={<Text>更新</Text>} footer={<Text>{note||'保持圈 X 和 BoxJS 开启。抓取后点导入；有完整查询请求时可直接刷新，只有快照时需重新打开官方 App 抓取。'}</Text>}>
+  <Section header={<Text>更新</Text>} footer={<Text>{note||'保持圈 X 和 BoxJS 开启。电信操作见下方抓取说明。抓取后点导入；有完整查询请求时可直接刷新，只有快照时需重新打开官方 App 抓取。'}</Text>}>
    <Button title={busy?'处理中…':'从 BoxJS 导入'} disabled={busy} action={doImport}/>
    <Button title="刷新查询" disabled={busy} action={async()=>{await refresh(true);Widget.reloadAll()}}/>
    <TextField title="BoxJS 域名" value={host} onChanged={setHost}/>
+  </Section>
+  <Section header={<Text>电信抓取</Text>} footer={<Text>启用 v0.2.1 抓取订阅、重写和 MITM 并信任证书。打开中国电信 App，登录后点“套餐余量”或“流量”，刷新页面；看到“已保存电信 App 鉴权请求”后回此导入。App 无通知时先检查订阅更新和 MITM。旧 e.dlife.cn 网页已跳转，不作为当前抓取入口。</Text>}>
+   <Text>电信 App 查询依赖 Token 和请求正文，普通 Cookie 或签到 Cookie 不能直接查询余量。鉴权已保存与余量查询成功分开提示；接口变化、证书固定和会话失效仍可能导致失败。</Text>
   </Section>
   <Section header={<Text>桌面小组件</Text>} footer={<Text>联通、电信、广电为适配试用版，尚未完成真机验证。广电 App 路径和返回结构仍需验证；不支持自动续登或签到。</Text>}>
    <Text>添加 Scripting 小组件，选择“运营商余量”，大、中、小号参数留空即可，按各尺寸已保存的样式显示。直接点卡片左上角运营商名称切换，自动记住选择，不用填写参数。单独查看可填“联通”“电信”“广电”。</Text>
    <Text>移动可用“移动 全景 1234”等参数，保留原组件的 12 种样式与多账号能力。其他三家目前各保留最近一次抓取的账号。</Text>
   </Section>
- </List></NavigationStack>
+ </List>
 }
 function CarrierStylePreview({provider,family,states}:{provider:Provider;family:CarrierFamily;states:CarrierState[]}){
  const [selected,setSelected]=useState<Provider>(provider)
@@ -68,4 +76,8 @@ function CarrierStylePreview({provider,family,states}:{provider:Provider;family:
   <Text font="headline">{providerNames[selected]} · {getCarrierStyle(selected,family)}</Text>
   <Text font="caption" foregroundStyle="secondaryLabel">点卡片左上角运营商名称切换。缺少历史时显示“记录中”，不生成示例用量。</Text>
  </VStack>
+}
+
+function ResourceDetails({state}:{state:CarrierState}){
+ return <List navigationTitle="套餐资源明细">{state.metrics?.resourceDetails?.map(item=><Section header={<Text>{item.name}</Text>}><Text>{item.kind} · {item.unit||'单位未返回'}</Text><HStack><Text>剩余</Text><Spacer/><Text>{item.remaining??'—'}</Text></HStack><HStack><Text>已用</Text><Spacer/><Text>{item.used??'—'}</Text></HStack><HStack><Text>总量</Text><Spacer/><Text>{item.total??'—'}</Text></HStack></Section>)}<Text font="caption" foregroundStyle="secondaryLabel">按接口原始单位展示；资源包可能重叠，不将明细直接相加。</Text></List>
 }

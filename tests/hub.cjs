@@ -5,7 +5,7 @@ let envelope={val:JSON.stringify({version:1,accounts:{broadnet:{metrics:{provide
 let mode='ok';
 const scripting={fetch:async(url,opts)=>{
  calls.push([url,opts]);
- if(url.includes('/query/data/10010.cookie'))return {ok:true,json:async()=>({val:''})};
+ if((url.includes('/query/data/10010.cookie')||url.includes('/query/data/10000.app.request')))return {ok:true,json:async()=>({val:''})};
  if(url.includes('carrier_hub_diagnostics_v1'))return {ok:true,json:async()=>({val:JSON.stringify({providers:{telecom:{stage:'nearby-query'}}})})};
  if(url.includes('/query/data/'))return {ok:true,json:async()=>envelope};
  if(mode==='error')throw Error('synthetic offline');

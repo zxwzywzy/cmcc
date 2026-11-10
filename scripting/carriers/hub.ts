@@ -1,12 +1,14 @@
 import { fetch } from 'scripting'
 import { CARRIER_STYLE_NAMES, resolveCarrierStyle, rememberUsage, clearUsage, type SharedCarrierStyle, type CarrierFamily } from './carrier-design'
 import { queryUnicomCookie } from './unicom-cookie'
+import { queryTelecomRequest, telecomRequest, telecomIdentity } from './telecom-cookie'
 import { endpoint, normalize, safeRequest, names } from './normalizers.js'
 import { loadAccount as loadMobile, listAccounts as mobileAccounts, importFromBoxJS as importMobile, removeAccount as removeMobile, clearCache as clearMobileCache } from './mobile/api'
 export type Provider = 'cmcc' | 'unicom' | 'telecom' | 'broadnet'
-export type Metrics = {provider:Provider; balance?:number; flowMB?:number; voice?:number; flowUsedMB?:number; flowTotalMB?:number; voiceUsed?:number; voiceTotal?:number; unicomSchema?:number; fetchedAt:number}
+export type Metrics = {provider:Provider; balance?:number; flowMB?:number; voice?:number; flowUsedMB?:number; flowTotalMB?:number; voiceUsed?:number; voiceTotal?:number; unicomSchema?:number;telecomSchema?:number;points?:number;packageName?:string;sms?:number;resourceDetails?:{name:string;kind:string;unit?:string;remaining?:number;used?:number;total?:number}[]; fetchedAt:number}
 export type CarrierRecord = {metrics:Metrics;request:any;queryReady:boolean}
 export type CarrierState = {provider:Provider;metrics?:Metrics;message?:string;stale?:boolean}
+const TELECOM_COOKIE='carrier.hub.telecom.app.request.v1'
 const UNICOM_COOKIE='carrier.hub.unicom.cookie.v1'
 const CREDENTIALS='carrier.hub.credentials.v1'
 const SETTINGS='carrier.hub.settings.v1'
@@ -22,7 +24,7 @@ export function savePreferences(host:string,refresh:number){
 }
 function read():Partial<Record<Provider,CarrierRecord>> {try{return JSON.parse(Keychain.get(CREDENTIALS)||'{}')}catch{return {}}}
 function write(v:Partial<Record<Provider,CarrierRecord>>){Keychain.set(CREDENTIALS,JSON.stringify(v));for(const record of Object.values(v)){if(record?.metrics)rememberUsage(record.metrics)}}
-export function forget(p:Provider){clearUsage(p);if(p==='cmcc'){for(const tel of mobileAccounts())removeMobile(tel)}else{const x=read();delete x[p];write(x);if(p==='unicom')Keychain.remove(UNICOM_COOKIE)}}
+export function forget(p:Provider){clearUsage(p);if(p==='cmcc'){for(const tel of mobileAccounts())removeMobile(tel)}else{const x=read();delete x[p];write(x);if(p==='unicom')Keychain.remove(UNICOM_COOKIE);if(p==='telecom')Keychain.remove(TELECOM_COOKIE)}}
 function validMetrics(p:Provider,m:any):m is Metrics {
  return m&&m.provider===p&&typeof m.fetchedAt==='number'&&Number.isFinite(m.fetchedAt)&&['balance','flowMB','voice'].some(k=>typeof m[k]==='number'&&Number.isFinite(m[k]))
 }
@@ -61,12 +63,29 @@ export async function importAll(hostOverride?:string):Promise<string>{
    cookieMessage=result.metrics&&!result.stale?'联通 riskSync Cookie 已导入并查到数据':'联通 riskSync Cookie 已导入；余量查询尚未成功'
   }
  }catch{}
+ let telecomMessage=''
+ try{
+  const r=await fetch(`https://${host}/query/data/10000.app.request`)
+  const data=r.ok?await r.json() as {val?:unknown}:{}
+  const req=typeof data.val==='string'?telecomRequest(JSON.parse(data.val)):null
+  if(req){
+   const serialized=JSON.stringify(req),previous=Keychain.get(TELECOM_COOKIE)
+   if(previous!==serialized){
+    let same=false;try{const a=telecomIdentity(JSON.parse(previous||'null')),b=telecomIdentity(req);same=!!a&&a===b}catch{}
+    if(!same)clearUsage('telecom')
+    const records=read();delete records.telecom;write(records)
+   }
+   Keychain.set(TELECOM_COOKIE,serialized)
+   const result=await loadProvider('telecom',true)
+   telecomMessage=result.metrics&&!result.stale?'电信 App 鉴权已导入并查到数据':'电信 App 鉴权已导入，但查询未成功；请刷新 App 套餐余量后重新抓取'
+  }
+ }catch{}
  let diagnostics=''
  try{
   const res=await fetch(`https://${host}/query/data/carrier_hub_diagnostics_v1`)
   if(res.ok){
    const data=await res.json() as {val?:string};const parsed=JSON.parse(data.val||'{}')
-   const labels:Record<string,string>={'request-seen':'请求已命中，尚无可解析响应','nearby-query':'看到了业务流量，但接口未适配','http-error':'接口返回失败','schema-mismatch':'响应未适配或会话失效','saved':'已保存查询数据'}
+   const labels:Record<string,string>={'request-seen':'请求已命中，尚无可解析响应','auth-saved':'App 鉴权请求已保存，可导入尝试查询','nearby-query':'看到了业务流量，但接口未适配','http-error':'接口返回失败','schema-mismatch':'响应未适配或会话失效','saved':'已保存查询数据'}
    const rows=(['unicom','telecom','broadnet'] as Provider[]).flatMap(p=>{
     const stage=parsed?.providers?.[p]?.stage
     return labels[stage]?[`${providerNames[p]}：${labels[stage]}`]:[]
@@ -74,24 +93,29 @@ export async function importAll(hostOverride?:string):Promise<string>{
    if(rows.length)diagnostics='\n抓取诊断：\n'+rows.join('\n')
   }
  }catch{}
- return mobileMessage+'；'+otherMessage+(cookieMessage?'\n'+cookieMessage:'')+diagnostics
+ return mobileMessage+'；'+otherMessage+(cookieMessage?'\n'+cookieMessage:'')+(telecomMessage?'\n'+telecomMessage:'')+diagnostics
 }
 export async function loadProvider(p:Provider,force=false):Promise<CarrierState>{
  if(p==='cmcc'){
   if(force)clearMobileCache()
-  try{const a=await loadMobile();const metrics:Metrics={provider:p,balance:a.balance,flowMB:a.general?.remainMB,flowTotalMB:a.general?.totalMB,flowUsedMB:a.general?.usedMB,voice:a.voice?.remain,voiceTotal:a.voice?.total,voiceUsed:a.voice?.used,fetchedAt:a.fetchedAt};rememberUsage(metrics);return {provider:p,metrics,stale:a.stale}}
+  try{const a=await loadMobile();const metrics:Metrics={provider:p,balance:a.balance,points:a.points,flowMB:a.general?.remainMB,flowTotalMB:a.general?.totalMB,flowUsedMB:a.general?.usedMB,voice:a.voice?.remain,voiceTotal:a.voice?.total,voiceUsed:a.voice?.used,fetchedAt:a.fetchedAt};rememberUsage(metrics);return {provider:p,metrics,stale:a.stale}}
   catch{return {provider:p,message:'请抓取移动登录凭据，再从 BoxJS 导入'}}
  }
  const all=read(),record=all[p]
  if(p==='unicom'){
   const cookie=Keychain.get(UNICOM_COOKIE)
   if(cookie){
-   if(record&&!force&&record.metrics.unicomSchema===3&&Date.now()-record.metrics.fetchedAt<300000)return {provider:p,metrics:record.metrics}
+   if(record&&!force&&record.metrics.unicomSchema===4&&Date.now()-record.metrics.fetchedAt<300000)return {provider:p,metrics:record.metrics}
    try{
     const metrics=await queryUnicomCookie(cookie);const saved=read();saved.unicom={metrics,request:null,queryReady:false};write(saved)
     return {provider:p,metrics}
    }catch{return {provider:p,metrics:record?.metrics,stale:!!record,message:'联通 Cookie 已导入，但查询失败；请重新抓取或检查接口兼容性'}}
   }
+ }
+ if(p==='telecom'&&Keychain.get(TELECOM_COOKIE)){
+  if(record&&!force&&record.metrics.telecomSchema===2&&Date.now()-record.metrics.fetchedAt<300000)return {provider:p,metrics:record.metrics}
+  try{const metrics=await queryTelecomRequest(JSON.parse(Keychain.get(TELECOM_COOKIE)!));const saved=read();saved.telecom={metrics,request:null,queryReady:false};write(saved);return {provider:p,metrics}}
+  catch{return {provider:p,metrics:record?.metrics,stale:!!record,message:'电信 App 查询失败；请刷新 App 套餐余量，再抓取并导入。Token 或签名可能已失效'}}
  }
  if(!record)return {provider:p,message:'尚未导入，请开启抓取后刷新官方 App'}
  if(!record.queryReady)return {provider:p,metrics:record.metrics,stale:true,message:'查询快照：刷新官方 App 后重新导入以更新'}

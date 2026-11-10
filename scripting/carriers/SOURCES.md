@@ -13,3 +13,9 @@
 新增联通来源（用户指定）：https://github.com/Nanako718/Scripting/blob/main/Quantumult%20X/10010_cookie.conf 及其 js/10010_cookie.js 的 URL/存储键约定；查询字段参考 https://github.com/Nanako718/Scripting/blob/main/scripts/联通/widget.tsx 。仅依据接口结构独立实现适配，未复制其固定示例手机号。
 
 0.2.0 共享布局为本仓库独立适配，参照用户提供的移动全景视觉结构，并复用保留来源的 Root、Num、Bar 等基础组件。品牌区分使用系统符号和独立配色，不新增官方 Logo 素材。
+
+0.2.1 独立实现的字段与协议参考：
+- 联通积分：首页 data.dataList 的 type=point，见 https://github.com/anker1209/Scriptable/blob/main/scripts/ChinaUnicom_2024.js 。不执行其脚本或记录其日志。
+- 联通资源明细：resources[].details 的 feePolicyName/addUpItemName、use/total/remain，见 https://github.com/Nanako718/Scripting/blob/main/scripts/%E8%81%94%E9%80%9A/widget.tsx 。顶层 packageName 按可选字段处理；不推测套餐名称。
+- 电信 App 鉴权结构与只读查询：headerInfos.token 和 content.fieldData，见 https://github.com/Cp0204/ChinaTelecomMonitor/blob/main/telecom_class.py 。只重用用户自己抓取的完整只读请求，不实现其密码登录、加密、续登流程。
+- 旧电信网页路径的历史参考：https://github.com/anker1209/Scriptable/blob/main/scripts/ChinaTelecom_2024.js 。本次未登录实测旧页面跳转 https://e.dlife.cn/portal/web/index.html ；主脚本来自 https://static.e.189.cn/portal/web/assets/index-Bg9jNuid.js ，静态检查主文件未找到旧套餐/余额路径；未覆盖懒加载模块或登录后的网络，因此不宣称已适配新门户，也不向用户提供旧网页抓取规则。

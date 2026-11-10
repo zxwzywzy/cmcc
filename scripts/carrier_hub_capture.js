@@ -48,6 +48,7 @@
       if (v !== void 0) out.voice = v;
     } else if (provider === "unicom") {
       if (json?.code !== "Y" || !Array.isArray(json?.data?.dataList)) throw Error("\u8054\u901A\u4F1A\u8BDD\u5931\u6548\u6216\u8FD4\u56DE\u7ED3\u6784\u672A\u9002\u914D");
+      readUnicomExtras(out, json, null);
       for (const item of json.data.dataList) {
         const label = String(item.remainTitle || "");
         if (/已用|消费|已消费/.test(label)) continue;
@@ -91,6 +92,41 @@
       if (allowed.includes(k.toLowerCase()) && typeof value.headers[k] === "string") headers[k] = value.headers[k];
     });
     return { url: value.url, method, headers, ...method === "POST" ? { body } : {} };
+  }
+  function cleanLabel(value) {
+    return typeof value === "string" ? value.replace(/[\x00-\x1f\x7f]/g, "").trim().slice(0, 160) : void 0;
+  }
+  function readUnicomExtras(out, fee, detail) {
+    if (fee?.code === "Y" && Array.isArray(fee?.data?.dataList)) {
+      for (const item of fee.data.dataList) {
+        if (item.type === "point" && !/已用|已消费|已兑换/.test(String(item.remainTitle || ""))) {
+          const n = number(item.number);
+          if (n !== void 0 && n >= 0) out.points = n;
+        }
+        if (out.balance === void 0 && item.type === "fee" && item.unit === "\u5143") out.balance = number(item.number);
+      }
+    }
+    if (!["0000", "Y"].includes(detail?.code)) return;
+    const name = cleanLabel(detail.packageName);
+    if (name) out.packageName = name;
+    const resources = Array.isArray(detail.resources) ? detail.resources : [];
+    const sms = resources.find((x) => x.type === "Sms");
+    if (sms && /^(条|条数)$/.test(String(detail.canuseSmsAllUnit || ""))) {
+      const n = number(sms.remainResource);
+      if (n !== void 0 && n >= 0) out.sms = n;
+    }
+    const details = [];
+    for (const group of resources) {
+      if (!["Flow", "Voice", "Sms"].includes(group.type)) continue;
+      for (const item of Array.isArray(group.details) ? group.details : []) {
+        const name2 = cleanLabel(item.feePolicyName) || cleanLabel(item.addUpItemName);
+        if (!name2) continue;
+        details.push({ name: name2, kind: group.type === "Flow" ? "\u6D41\u91CF" : group.type === "Voice" ? "\u8BED\u97F3" : "\u77ED\u4FE1", unit: cleanLabel(item.unit), remaining: number(item.remain), used: number(item.use), total: number(item.total) });
+        if (details.length >= 100) break;
+      }
+      if (details.length >= 100) break;
+    }
+    if (details.length) out.resourceDetails = details;
   }
 
   // scripts/carrier_hub_capture.source.js
@@ -138,8 +174,17 @@
     if (p) {
       const session = String($request.sessionIndex || "");
       if (typeof $response === "undefined") {
-        diagnostic(p, "request-seen", "\u5DF2\u547D\u4E2D\u67E5\u8BE2\u8BF7\u6C42\uFF0C\u7B49\u5F85\u89E3\u6790\u54CD\u5E94\uFF1B\u8FD9\u8FD8\u4E0D\u662F\u6293\u53D6\u6210\u529F\u3002");
         const req = safeRequest($request);
+        let authSaved = false;
+        if (p === "telecom" && req?.method === "POST") {
+          try {
+            const body = JSON.parse(req.body);
+            if (typeof body.headerInfos?.token === "string" && body.headerInfos.token.trim()) authSaved = $prefs.setValueForKey(JSON.stringify(req), "10000.app.request");
+          } catch (_) {
+          }
+        }
+        if (authSaved) diagnostic(p, "auth-saved", "\u5DF2\u4FDD\u5B58\u7535\u4FE1 App \u9274\u6743\u8BF7\u6C42\uFF08\u542B Token\uFF09\u3002\u8BF7\u5230 Scripting \u8D26\u53F7\u9875\u4ECE BoxJS \u5BFC\u5165\u5C1D\u8BD5\u67E5\u8BE2\uFF1B\u8FD9\u8FD8\u4E0D\u662F\u4F59\u91CF\u67E5\u8BE2\u6210\u529F\u3002");
+        else diagnostic(p, "request-seen", "\u5DF2\u547D\u4E2D\u67E5\u8BE2\u8BF7\u6C42\uFF0C\u7B49\u5F85\u89E3\u6790\u54CD\u5E94\uFF1B\u8FD9\u8FD8\u4E0D\u662F\u6293\u53D6\u6210\u529F\u3002");
         if (req) {
           const pending = read(PENDING), key = p + ":" + session;
           pending[key] = { request: req, time: Date.now() };

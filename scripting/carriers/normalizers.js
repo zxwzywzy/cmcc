@@ -40,6 +40,7 @@ export function normalize(provider,json) {
   if(v!==undefined)out.voice=v;
  } else if(provider==='unicom') {
   if(json?.code!=='Y'||!Array.isArray(json?.data?.dataList))throw Error('联通会话失效或返回结构未适配');
+  readUnicomExtras(out,json,null);
   for(const item of json.data.dataList) {
    // Do not label an "already used" value as remaining.
    const label=String(item.remainTitle||'');
@@ -80,7 +81,7 @@ export function safeRequest(value) {
 
 // Fields from Nanako718/Scripting scripts/联通/widget.tsx; never copy its sample phone.
 export function normalizeUnicomCookie(fee,detail){
- const out={provider:'unicom',unicomSchema:3,fetchedAt:Date.now()};
+ const out={provider:'unicom',unicomSchema:4,fetchedAt:Date.now()};
  if(fee?.code==='Y'){
   const resource=fee.feeResource,n=number(resource?.feePersent);
   if(n!==undefined&&resource?.newUnit==='元')out.balance=n;
@@ -106,6 +107,36 @@ export function normalizeUnicomCookie(fee,detail){
    if(used!==undefined&&used>=0){out.voiceUsed=used;if(voice+used>=0)out.voiceTotal=voice+used;}
   }
  }
+ readUnicomExtras(out,fee,detail);
  if(!['balance','flowMB','voice'].some(k=>Number.isFinite(out[k])))throw Error('联通 Cookie 查询未返回可识别余量');
  return out;
 }
+
+function cleanLabel(value){return typeof value==='string'?value.replace(/[\x00-\x1f\x7f]/g,'').trim().slice(0,160):undefined}
+function readUnicomExtras(out,fee,detail){
+ if(fee?.code==='Y'&&Array.isArray(fee?.data?.dataList)){
+  for(const item of fee.data.dataList){
+   if(item.type==='point'&&!/已用|已消费|已兑换/.test(String(item.remainTitle||''))){const n=number(item.number);if(n!==undefined&&n>=0)out.points=n;}
+   if(out.balance===undefined&&item.type==='fee'&&item.unit==='元')out.balance=number(item.number);
+  }
+ }
+ if(!['0000','Y'].includes(detail?.code))return;
+ const name=cleanLabel(detail.packageName);if(name)out.packageName=name;
+ const resources=Array.isArray(detail.resources)?detail.resources:[];
+ const sms=resources.find(x=>x.type==='Sms');
+ if(sms&&/^(条|条数)$/.test(String(detail.canuseSmsAllUnit||''))){const n=number(sms.remainResource);if(n!==undefined&&n>=0)out.sms=n;}
+ const details=[];
+ for(const group of resources){
+  if(!['Flow','Voice','Sms'].includes(group.type))continue;
+  for(const item of Array.isArray(group.details)?group.details:[]){
+   const name=cleanLabel(item.feePolicyName)||cleanLabel(item.addUpItemName);if(!name)continue;
+   details.push({name,kind:group.type==='Flow'?'流量':group.type==='Voice'?'语音':'短信',unit:cleanLabel(item.unit),remaining:number(item.remain),used:number(item.use),total:number(item.total)});
+   if(details.length>=100)break;
+  }
+  if(details.length>=100)break;
+ }
+ if(details.length)out.resourceDetails=details;
+}
+
+
+export function unicomExtras(summary){const out={};readUnicomExtras(out,summary,null);delete out.balance;return out;}

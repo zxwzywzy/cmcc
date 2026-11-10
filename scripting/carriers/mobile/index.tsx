@@ -43,7 +43,7 @@ import { STYLES, MULTI, NEEDS_HIST, stylesFor, styleById, paramOf, renderStyle, 
 import { loadSlots, sampleSlots, cachedSlots } from './slots'
 import { installUpdate } from './update'
 import { CarrierOverview } from '../carrier-overview'
-import { importAll, importedProviders, providerIds, loadProvider, loadAll, getCarrierStyle, type Provider, type CarrierState } from '../hub'
+import { importAll, importedProviders, providerIds, loadProvider, loadAll, getCarrierStyle, forget, type Provider, type CarrierState } from '../hub'
 import { readCarrier, nextCarrier, selectCarrier } from '../app_intents'
 
 declare const Safari: { openURL(url: string): Promise<boolean> }
@@ -134,12 +134,16 @@ export function Home() {
   const [tick, setTick] = useState(0)
   const tab = useObservable<number>(0)
 
-  useEffect(() => { reload() }, [])
+  useEffect(() => {
+    async function initialLoad(){
+      if (!listAccounts().length) await importFromBoxJS(getData().host).catch(() => {})
+      await reload()
+    }
+    initialLoad()
+  }, [])
 
   async function reload(force = false) {
     if (force) clearCache()
-    // 没有账号时 (首次使用, 或脚本被重新导入后 Keychain 清空) 先试着从 BoxJS 取; 圈 X 没开就走正常的导入引导
-    if (!listAccounts().length) await importFromBoxJS(getData().host).catch(() => {})
     setSlots(listAccounts().length ? await loadSlots(styleById('W')!, []) : [])
     setTick(tick + 1)
     Widget.reloadAll()
@@ -151,7 +155,6 @@ export function Home() {
 
   return (
     <TabView selection={tab}>
-      <Tab title="运营商" systemImage="antenna.radiowaves.left.and.right" value={3}><CarrierOverview /></Tab>
       <Tab title="小组件" systemImage="square.grid.2x2.fill" value={0}>
         <NavigationStack><WidgetTab shared={shared} close={close} onChanged={onChanged} toAccounts={() => tab.setValue(1)} /></NavigationStack>
       </Tab>
@@ -489,22 +492,6 @@ function AccountCard(props: { slot: Slot }) {
 }
 
 function AccountsTab(props: Shared & { close: any }) {
-  const [note, setNote] = useState('')
-  const [busy, setBusy] = useState(false)
-  const host = getData().host
-
-  async function doImport() {
-    setBusy(true)
-    setNote('从 BoxJS 导入...')
-    try {
-      setNote(await importAll(host))
-      await props.reload()
-    } catch (e) {
-      setNote(errorWords(e))
-    }
-    setBusy(false)
-  }
-
   function onMove(indices: number[], newOffset: number) {
     const moving = indices.map(i => props.slots[i])
     const next = props.slots.filter((_, i) => !indices.includes(i))
@@ -521,33 +508,11 @@ function AccountsTab(props: Shared & { close: any }) {
     Widget.reloadAll()
   }
 
-  return (
-    <List
-      navigationTitle="账号"
-      navigationBarTitleDisplayMode="large"
-      toolbar={{ cancellationAction: props.close }}
-    >
-      {props.slots.length ? (
-        <Section footer={<Text>此列表为移动账号；其他运营商在“运营商”页查看。长按可调整移动号码顺序。</Text>}>
-          <ForEach
-            count={props.slots.length}
-            itemBuilder={(i: number) => {
-              const s = props.slots[i]
-              return <NavigationLink key={s.tel} destination={<AccountDetail slot={s} reload={props.reload} />}><AccountCard slot={s} /></NavigationLink>
-            }}
-            onMove={onMove}
-            onDelete={onDelete}
-          />
-        </Section>
-      ) : null}
-      <Section
-        header={<Text>导入</Text>}
-        footer={<Text>{note || '四家共用此导入按钮：先开启配套抓取订阅和 BoxJS，分别刷新各运营商 App，再点导入。结果会列出成功导入的运营商；未抓到的数据不会自动生成。'}</Text>}
-      >
-        <Button title="从 BoxJS 导入" systemImage="square.and.arrow.down" disabled={busy} action={doImport} />
-      </Section>
-    </List>
-  )
+  return <CarrierOverview close={props.close} onImported={props.reload} mobileAccounts={props.slots.length ?
+    <Section header={<Text>移动号码</Text>} footer={<Text>长按调整移动号码顺序，点号码查看详细资料。</Text>}>
+      <ForEach count={props.slots.length} itemBuilder={(i:number)=>{const s=props.slots[i];return <NavigationLink key={s.tel} destination={<AccountDetail slot={s} reload={props.reload}/>}><AccountCard slot={s}/></NavigationLink>}} onMove={onMove} onDelete={onDelete}/>
+    </Section> : null}/>
+
 }
 
 function AccountDetail(props: { slot: Slot; reload: (force?: boolean) => Promise<void> }) {
@@ -637,8 +602,9 @@ function SettingsTab(props: Shared & { close: any }) {
   async function clearAll() {
     const ok = await Dialog.confirm({ title: '清除全部账号?', message: '会删除 Keychain 里所有号的登录凭证和本机历史', cancelLabel: '取消', confirmLabel: '清除' })
     if (!ok) return
-    for (const t of listAccounts()) await removeAccount(t)
-    await props.reload()
+    for (const p of providerIds) forget(p)
+    props.setSlots([])
+    Widget.reloadAll()
   }
 
   return (

@@ -28,8 +28,13 @@ try {
  if(p) {
   const session=String($request.sessionIndex||'');
   if(typeof $response==='undefined') {
-   diagnostic(p,'request-seen','已命中查询请求，等待解析响应；这还不是抓取成功。');
    const req=safeRequest($request);
+   let authSaved=false;
+   if(p==='telecom'&&req?.method==='POST'){
+    try{const body=JSON.parse(req.body);if(typeof body.headerInfos?.token==='string'&&body.headerInfos.token.trim())authSaved=$prefs.setValueForKey(JSON.stringify(req),'10000.app.request')}catch(_){}
+   }
+   if(authSaved)diagnostic(p,'auth-saved','已保存电信 App 鉴权请求（含 Token）。请到 Scripting 账号页从 BoxJS 导入尝试查询；这还不是余量查询成功。');
+   else diagnostic(p,'request-seen','已命中查询请求，等待解析响应；这还不是抓取成功。');
    if(req) {
     const pending=read(PENDING), key=p+':'+session;
     pending[key]={request:req,time:Date.now()};
