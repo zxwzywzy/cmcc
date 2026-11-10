@@ -82,3 +82,8 @@ export function setCarrierStyle(provider:Provider,style:CarrierStyle){
  let saved:Record<string,string>={};try{saved=JSON.parse(store.get<string>(STYLE_KEY)||'{}')}catch{}
  store.set(STYLE_KEY,JSON.stringify({...saved,[provider]:style}))
 }
+
+export function importedProviders():Provider[]{
+ const saved=read()
+ return providerIds.filter(p=>p==='cmcc'?mobileAccounts().length>0:!!saved[p]?.metrics)
+}

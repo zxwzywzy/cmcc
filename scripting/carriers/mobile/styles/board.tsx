@@ -10,6 +10,8 @@ import {
   balanceColor, balanceLabel, RED, type Ctx, type Meter, type Slot,
 } from '../ui'
 import type { Account } from '../api'
+import { CarrierTitle } from '../../carrier-title'
+import { OtherCarrierBoard } from '../../other-carrier-board'
 import { NoData } from './basic'
 import { DailyBars } from './forecast'
 
@@ -120,8 +122,7 @@ function Top(props: { ctx: Ctx; a: Account; index: number }) {
   const sub = [a.user?.brand, a.user?.starLevel ? starText(a) : ''].filter(Boolean).join(' · ')
   return (
     <HStack spacing={6}>
-      <Logo size={16} />
-      <Text font={12} fontWeight="semibold" foregroundStyle={ctx.th.t1} lineLimit={1}>中国移动</Text>
+      {ctx.carrierSwitch?<CarrierTitle ctx={ctx}/>:<HStack spacing={5}><Logo size={16}/><Text font={12} fontWeight="semibold" foregroundStyle={ctx.th.t1} lineLimit={1}>中国移动</Text></HStack>}
       {ctx.slots.length > 1 ? <Tabs ctx={ctx} index={props.index} /> : <Text font={11} foregroundStyle={ctx.th.t3} lineLimit={1}>{sub}</Text>}
       <Spacer minLength={4} />
       <SyncTap ctx={ctx} t={a.fetchedAt} stale={a.stale} />
@@ -261,9 +262,10 @@ function Large(props: { ctx: Ctx; slot: Slot; a: Account; ms: Meter[]; index: nu
 
 export function BoardStyle(props: { ctx: Ctx }) {
   const { ctx } = props
+  if(ctx.carrierSwitch&&ctx.carrier&&ctx.carrier.provider!=='cmcc')return <OtherCarrierBoard ctx={ctx}/>
   const index = pageIndex(ctx)
   const slot = ctx.slots[index]?.account ? ctx.slots[index] : ctx.slots.find(s => s.account)
-  if (!slot?.account) return <NoData ctx={ctx} />
+  if (!slot?.account) return ctx.carrierSwitch?<OtherCarrierBoard ctx={{...ctx,carrier:ctx.carrier||{provider:'cmcc',message:'尚未导入移动数据'}}}/>:<NoData ctx={ctx} />
   const a = slot.account
   const ms = metersOf(a).slice(0, 3)
   if (ctx.size === 's') return <Small ctx={ctx} slot={slot} a={a} ms={ms} />

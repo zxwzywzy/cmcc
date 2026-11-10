@@ -43,7 +43,8 @@ import { STYLES, MULTI, NEEDS_HIST, stylesFor, styleById, paramOf, renderStyle, 
 import { loadSlots, sampleSlots, cachedSlots } from './slots'
 import { installUpdate } from './update'
 import { CarrierOverview } from '../carrier-overview'
-import { importAll } from '../hub'
+import { importAll, importedProviders, providerIds, loadProvider, type Provider, type CarrierState } from '../hub'
+import { readCarrier, nextCarrier, selectCarrier } from '../app_intents'
 
 declare const Safari: { openURL(url: string): Promise<boolean> }
 
@@ -88,7 +89,18 @@ const previewSlots = (p: Shared) => (p.slots.some(s => s.account) ? p.slots : sa
 function Preview(props: { style: StyleDef; family: Family; slots: Slot[]; look?: Look; scale?: number }) {
   const box = BOX[props.family]
   const k = props.scale ?? 1
-  const view = renderStyle(props.style, props.family, { inApp: true, slots: slotsFor(props.style, props.slots), look: props.look ?? getLook(), page: 0 })
+  const switchable=props.style.id==='W'&&props.family==='systemMedium'
+  const [carrier,setCarrier]=useState<Provider>((readCarrier()||'cmcc') as Provider)
+  const [state,setState]=useState<CarrierState|undefined>(undefined)
+  useEffect(()=>{
+    let active=true
+    if(!switchable||carrier==='cmcc')setState(undefined)
+    else {setState({provider:carrier,message:'读取中…'});loadProvider(carrier).then(value=>{if(active)setState(value)})}
+    return ()=>{active=false}
+  },[carrier,switchable])
+  const cycle=()=>{const imported=importedProviders();const next=nextCarrier(carrier,imported.length>1?imported:providerIds) as Provider;selectCarrier(next);setCarrier(next)}
+  const view = renderStyle(props.style, props.family, { inApp: true, slots: slotsFor(props.style, props.slots), look: props.look ?? getLook(), page: 0,
+    carrier:switchable?state:undefined,carrierSwitch:switchable,onCarrierChange:cycle })
   const room = props.family.startsWith('system') ? 12 : 0
   return (
     <ZStack frame={{ width: box.width * k, height: (box.height + room) * k }}>

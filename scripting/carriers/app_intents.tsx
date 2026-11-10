@@ -58,3 +58,21 @@ export const CarrierSetIntent = AppIntentManager.register({
     Widget.reloadAll()
   },
 })
+
+export function nextCarrier(current:string,available:string[]=CARRIERS):string {
+ const list=CARRIERS.filter(p=>available.includes(p))
+ if(!list.length)return CARRIERS[(CARRIERS.indexOf(current)+1)%CARRIERS.length]
+ const index=list.indexOf(current)
+ return list[(index+1)%list.length]
+}
+export function selectCarrier(provider:string){
+ if(!CARRIERS.includes(provider))return
+ AppStorage.set(CARRIER_KEY,provider)
+ Widget.reloadAll()
+}
+export const CarrierNextIntent=AppIntentManager.register({
+ name:'CarrierHubNextProvider',protocol:AppIntentProtocol.AppIntent,
+ perform:async({current,available}:{current:string;available:string[]})=>{
+  selectCarrier(nextCarrier(current,Array.isArray(available)?available:CARRIERS))
+ },
+})

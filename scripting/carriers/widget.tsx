@@ -1,6 +1,6 @@
 import { Button, HStack, VStack, Spacer, Text, Widget, RoundedRectangle } from 'scripting'
 import { loadAll, loadProvider, providerNames, value, flowValue, timeValue, preferences, getCarrierStyle, carrierStyles, type CarrierStyle, type Provider, type CarrierState } from './hub'
-import { parseParam, resolveStyle, renderStyle } from './mobile/styles/index'
+import { parseParam, resolveStyle, renderStyle, styleById } from './mobile/styles/index'
 import { getLook, type Family } from './mobile/settings'
 import { loadSlots } from './mobile/slots'
 import { CarrierContent } from './carrier-content'
@@ -9,21 +9,6 @@ const aliases:Record<string,Provider>={'移动':'cmcc','联通':'unicom','电信
 function Tile({state,compact=false,skin}:{state:CarrierState;compact?:boolean;skin?:CarrierStyle}){
  return <CarrierContent state={state} compact={compact} skin={skin||getCarrierStyle(state.provider)}/>
 }
-/** Medium overview: 44pt carrier tabs and one readable detail panel. */
-function MediumOverview({states,state}:{states:CarrierState[];state:CarrierState}){
- const m=state.metrics
- return <VStack spacing={4} frame={{maxWidth:'infinity',maxHeight:'infinity'}}>
-  <HStack spacing={4}>
-   {states.map(s=><Button intent={CarrierSetIntent({provider:s.provider})} buttonStyle="plain" frame={{maxWidth:'infinity'}}>
-    <Text font={12} fontWeight={s.provider===state.provider?'semibold':'regular'} foregroundStyle={s.provider===state.provider?'systemBackground':'label'} lineLimit={1} frame={{maxWidth:'infinity',minHeight:44}} background={<RoundedRectangle cornerRadius={10} fill={s.provider===state.provider?'label':'secondarySystemGroupedBackground'}/>}>
-     {providerNames[s.provider].replace(/^中国/,'')}
-    </Text>
-   </Button>)}
-  </HStack>
-  <CarrierContent state={state} skin={getCarrierStyle(state.provider)} horizontal/>
- </VStack>
-}
-
 async function main(){
  const param=String(Widget.parameter||'').trim(),tokens=param.split(/\s+/),family=Widget.family as Family
  // Preserve empty/default, original style names, style IDs and account-tail parameters.
@@ -32,7 +17,10 @@ async function main(){
  if(!autoOverview&&((!aliases[tokens[0]]&&!['总览','合集','overview'].includes(param))||aliases[tokens[0]]==='cmcc')){
   const legacyParam=aliases[tokens[0]]==='cmcc'?tokens.slice(1).join(' '):param
   const {style:name,accounts}=parseParam(legacyParam);const style=resolveStyle(name,family,accounts.length)
-  Widget.present(renderStyle(style,family,{inApp:false,slots:await loadSlots(style,accounts),look:getLook(),page:readPage()}),{policy:'after',date:new Date(Date.now()+preferences().refresh*60000)});return
+  const switchable=style.id==='W'&&family==='systemMedium'
+  const remembered=readCarrier()
+  const carrier=switchable&&remembered&&remembered!=='cmcc'?await loadProvider(remembered as Provider):undefined
+  Widget.present(renderStyle(style,family,{inApp:false,slots:await loadSlots(style,accounts),look:getLook(),page:readPage(),carrier,carrierSwitch:switchable}),{policy:'after',date:new Date(Date.now()+preferences().refresh*60000)});return
  }
  const selected=aliases[tokens[0]],states=selected?[await loadProvider(selected)]:await loadAll()
  const loaded=states.filter(s=>s.metrics),ordered=selected?states:[...loaded,...states.filter(s=>!s.metrics)]
@@ -43,7 +31,9 @@ async function main(){
  if(family==='systemLarge'&&!selected)view=<VStack spacing={8}><HStack spacing={8}><Tile state={ordered[0]} compact/><Tile state={ordered[1]} compact/></HStack><HStack spacing={8}><Tile state={ordered[2]} compact/><Tile state={ordered[3]} compact/></HStack></VStack>
  else if(family==='systemMedium'&&!selected){
   const active=states.find(s=>s.provider===readCarrier())||loaded[0]||states[0]
-  view=<MediumOverview states={states} state={active}/>
+  const style=styleById('W')!
+  Widget.present(renderStyle(style,family,{inApp:false,slots:await loadSlots(style,[]),look:getLook(),page:readPage(),carrier:active,carrierSwitch:true}),{policy:'after',date:new Date(Date.now()+preferences().refresh*60000)})
+  return
  }
  else {
   const explicit=tokens.slice(1).join(" ")

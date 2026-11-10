@@ -7,6 +7,7 @@ import type { Color, DynamicShapeStyle } from 'scripting'
 import { formatFlow, CmccError, type Account } from './api'
 import type { Hist, Key } from './history'
 import type { Look, Family } from './settings'
+import type { CarrierState } from '../hub'
 import { RefreshIntent, PageSetIntent } from './app_intents'
 
 // ─────────────────────────────────────────────────────────────
@@ -106,6 +107,9 @@ export type Ctx = {
   family: Family
   inApp: boolean        // App 内预览: 不用 widgetBackground, 按钮不触发
   slots: Slot[]         // 单号样式只用第一个; 双号 / 多号样式用全部
+  carrier?: CarrierState
+  carrierSwitch?: boolean
+  onCarrierChange?: () => void
   page: number          // 多号翻页当前页
 }
 

@@ -8,5 +8,8 @@ vm.runInNewContext(code,{module:moduleObject,exports:moduleObject.exports,Storag
  for(const provider of ['cmcc','unicom','telecom','broadnet']){await handlers.CarrierHubSelectProvider({provider});assert.equal(moduleObject.exports.readCarrier(),provider);assert.equal(data['cmcc.page'],3)}
  assert.equal(reloads,4);
  await handlers.CarrierHubSelectProvider({provider:'unknown'});assert.equal(moduleObject.exports.readCarrier(),'broadnet');assert.equal(reloads,4);
+ assert.equal(moduleObject.exports.nextCarrier('cmcc',['cmcc','telecom','broadnet']),'telecom');
+ assert.equal(moduleObject.exports.nextCarrier('broadnet',['cmcc','telecom','broadnet']),'cmcc');
+ await handlers.CarrierHubNextProvider({current:'cmcc',available:['cmcc','telecom']});assert.equal(moduleObject.exports.readCarrier(),'telecom');assert.equal(data['cmcc.page'],3);
  console.log('PASS carrier intent: all providers, persistence, independent mobile paging, invalid selection.');
 })().catch(e=>{console.error(e);process.exitCode=1});

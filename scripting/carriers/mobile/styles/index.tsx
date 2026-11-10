@@ -2,6 +2,7 @@
 // 样式目录: 每种样式声明自己支持的尺寸, 只在这些尺寸出现; 小组件和 App 内预览共用 renderStyle
 // 参数: 「样式名 尾号」, 如「仪表盘 1234」「双号对照 主号:1234,副号:5678」; 只写尾号用该尺寸的默认样式
 
+import type { CarrierState } from '../../hub'
 import { makeTheme, type Ctx, type Size, type Slot } from '../ui'
 import { getDefaults, BUILTIN_DEFAULTS, type Family, type Look } from '../settings'
 import { AdaptiveStyle, BigBalanceStyle, BillStyle, LockCircular, LockRect, LockInline } from './basic'
@@ -84,7 +85,7 @@ export function resolveStyle(name: string, family: Family, accounts = 0): StyleD
   return def?.views[family] ? def : styleById(BUILTIN_DEFAULTS[family])!
 }
 
-export function renderStyle(style: StyleDef, family: Family, opts: { inApp: boolean; slots: Slot[]; look: Look; page: number }) {
+export function renderStyle(style: StyleDef, family: Family, opts: { inApp: boolean; slots: Slot[]; look: Look; page: number; carrier?:CarrierState; carrierSwitch?:boolean; onCarrierChange?:()=>void }) {
   const ctx: Ctx = {
     th: makeTheme(opts.look),
     size: (family === 'systemSmall' ? 's' : family === 'systemMedium' ? 'm' : 'l') as Size,
@@ -92,6 +93,9 @@ export function renderStyle(style: StyleDef, family: Family, opts: { inApp: bool
     inApp: opts.inApp,
     slots: opts.slots,
     page: opts.page,
+    carrier:opts.carrier,
+    carrierSwitch:opts.carrierSwitch??style.id==='W',
+    onCarrierChange:opts.onCarrierChange,
   }
   const View = style.views[family] ?? styleById(BUILTIN_DEFAULTS[family])!.views[family]!
   return <View ctx={ctx} />

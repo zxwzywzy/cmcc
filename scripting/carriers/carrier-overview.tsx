@@ -42,7 +42,7 @@ export function CarrierOverview(){
    <TextField title="BoxJS 域名" value={host} onChanged={setHost}/>
   </Section>
   <Section header={<Text>桌面小组件</Text>} footer={<Text>联通、电信、广电为适配试用版，尚未完成真机验证。广电 App 路径和返回结构仍需验证；不支持自动续登或签到。</Text>}>
-   <Text>添加 Scripting 小组件，选择“运营商余量”，中号和大号参数留空即可。大号显示四家导入状态，中号直接点上方运营商标签切换，自动记住选择，不用填写参数。单独查看可填“联通”“电信”“广电”。</Text>
+   <Text>添加 Scripting 小组件，选择“运营商余量”，中号和大号参数留空即可。大号显示四家导入状态，中号全景直接点卡片左上角运营商名称切换，自动记住选择，不用填写参数。单独查看可填“联通”“电信”“广电”。</Text>
    <Text>移动可用“移动 全景 1234”等参数，保留原组件的 12 种样式与多账号能力。其他三家目前各保留最近一次抓取的账号。</Text>
   </Section>
  </List></NavigationStack>
