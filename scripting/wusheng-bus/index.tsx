@@ -40,7 +40,7 @@ function More({changed}:{changed:()=>void}){
  <Section header={<Text>账号管理</Text>}><NavigationLink destination={<ImportAccount changed={()=>{setAccountRevision(n=>n+1);changed()}}/>}><Text>{hasAccount?'重新导入账号':'导入私有账号'}</Text></NavigationLink>{hasAccount?<Button title="移除本机账号" action={()=>{forgetAccount();setAccountRevision(n=>n+1);changed();Widget.reloadAll()}}/>:null}</Section>
  <Section header={<Text>定位数据</Text>} footer={<Text>清除后附近站台需要重新允许定位并查询；固定站台选择不会被删除。</Text>}><Button title="清除本机定位缓存" action={()=>{clearNearby();changed();Widget.reloadAll()}}/></Section>
  <Section><NavigationLink destination={<Guide/>}><Text>使用说明与桌面组件</Text></NavigationLink></Section>
- <Section header={<Text>脚本更新 · 0.2.3</Text>} footer={<Text>更新后重新运行脚本并刷新桌面组件。</Text>}><Button title="更新脚本" action={async()=>{await Safari.openURL(Script.createImportScriptsURLScheme(['https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus.scripting']))}}/></Section>
+ <Section header={<Text>脚本更新 · 0.2.4</Text>} footer={<Text>更新后重新运行脚本并刷新桌面组件。</Text>}><Button title="更新脚本" action={async()=>{await Safari.openURL(Script.createImportScriptsURLScheme(['https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus.scripting']))}}/></Section>
  </List>
 }
 function Home(){
@@ -67,7 +67,7 @@ function Home(){
  
  
  </Section>
- <Section header={<Text>出行操作</Text>}><Button title="获取 / 刷新乘车码" action={async()=>{await Navigation.present({element:<RidePage auto/>})}}/><NavigationLink destination={<Lines changed={changed}/>}><Text>选择固定线路和候车站</Text></NavigationLink></Section>
+ <Section header={<Text>出行操作</Text>}><Button title="乘车码" action={async()=>{await Navigation.present({element:<RidePage fromTap/>});setCard(readAccount()?Storage.get('wusheng.bus.balance')||undefined:undefined)}}/><NavigationLink destination={<Lines changed={changed}/>}><Text>选择固定线路和候车站</Text></NavigationLink></Section>
  <Section header={<Text>公交卡</Text>} footer={<Text>{note||'余额以公交系统返回为准，查询失败时显示上次数据。'}</Text>}><Text>{readAccount()?(card?.balance!==undefined?'余额 ¥'+card.balance.toFixed(2):'接口暂未返回余额'):'尚未导入账号'}</Text>{readAccount()&&card?<Text>{(card.cardTail?'卡尾号 '+card.cardTail+' · ':'')+'更新于 '+clock(card.fetchedAt)}</Text>:null}</Section>
  
  

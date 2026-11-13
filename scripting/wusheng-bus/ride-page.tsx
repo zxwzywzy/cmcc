@@ -1,14 +1,16 @@
-import { Button,Image,List,Navigation,Script,Section,Text,useEffect,useState } from 'scripting'
-import { requestRideImage } from './ride'
-export function RidePage({auto=false}:{auto?:boolean}){
+import { Button,Image,List,Navigation,Script,Section,Text,Widget,useEffect,useState } from 'scripting'
+import { createRideSession,initialRideState,type RideState } from './ride'
+import { clock } from './view'
+export function RidePage({fromTap=false}:{fromTap?:boolean}){
  const dismiss=Navigation.useDismiss()
- const [image,setImage]=useState<any>(undefined),[busy,setBusy]=useState(false),[note,setNote]=useState('点击取回本次乘车码'),[until,setUntil]=useState(0)
- async function refresh(){if(busy)return;setImage(undefined);setBusy(true);setUntil(0);setNote('正在定位并向公交系统取新码…');try{const fresh=await requestRideImage();setImage(fresh);setUntil(Date.now()+20000);setNote('码仅在本页短时展示，扫码失败请重新取码。')}catch(e){setNote((e as Error).message)}finally{setBusy(false)}}
- useEffect(()=>{if(auto)refresh()},[])
- useEffect(()=>{if(!until)return;const timer=setTimeout(()=>{setImage(undefined);setUntil(0);setNote('本页已隐藏乘车码，请点击重新取码')},Math.max(0,until-Date.now()));return()=>clearTimeout(timer)},[until])
- return <List navigationTitle="乘车码" toolbar={{cancellationAction:<Button title="关闭" action={dismiss}/>}}><Section footer={<Text>每次点击都会清除旧图后向公交系统请求。图片只留在本页内存，20秒后隐藏；这是本页展示限制，不是官方有效期。实际能否刷卡以公交系统为准。</Text>}>
- {image?<Image image={image} resizable frame={{width:240,height:240}} background="white"/>:null}
- <Text>{note}</Text><Button title={busy?'正在取码…':'获取 / 刷新乘车码'} disabled={busy} action={refresh}/><Button title="打开微信（手动进入武胜公交）" action={async()=>{await Safari.openURL('weixin://')}}/>
- </Section><Section><Text>若服务不返回图片，请先在微信“武胜公交”确认手机号授权及乘车码开通状态。本页不充值、不扣费，也不会模拟生成公交乘车凭证。</Text></Section></List>
+ const [state,setState]=useState<RideState>(initialRideState())
+ const [session]=useState(createRideSession(setState,()=>Widget.reloadAll()))
+ useEffect(()=>{if(fromTap)session.refresh();return()=>session.dispose()},[])
+ return <List navigationTitle="乘车码" toolbar={{cancellationAction:<Button title="关闭" action={()=>{session.dispose();dismiss()}}/>}}>
+ <Section header={<Text>公交卡余额</Text>}><Text>{state.card?.balance!==undefined?(state.cardStale?'上次余额 ¥':'余额 ¥')+state.card.balance.toFixed(2):'余额未获取'}</Text>{state.card?<Text>{'更新于 '+clock(state.card.fetchedAt)}</Text>:null}</Section>
+ <Section footer={<Text>仅点击乘车码入口或本页刷新按钮时取新码，同时更新余额。20秒后仅隐藏图片，不自动取新码；此时限不是官方二维码有效期。</Text>}>
+ {state.image?<Image image={state.image} resizable frame={{width:240,height:240}} background="white"/>:null}
+ <Text>{state.note}</Text><Button title={state.busy?'正在取码…':'获取 / 刷新乘车码'} disabled={state.busy} action={()=>session.refresh()}/><Button title="打开微信（手动进入武胜公交）" action={async()=>{await Safari.openURL('weixin://')}}/>
+ </Section><Section><Text>取码不强制重新定位；无可用定位缓存时使用公交站参考坐标。附近公交仍通过真实定位查询。取码失败时可回微信使用。</Text></Section></List>
 }
-export async function presentRide(){await Navigation.present({element:<RidePage auto/>});Script.exit()}
+export async function presentRide(){await Navigation.present({element:<RidePage fromTap/>});Script.exit()}

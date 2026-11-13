@@ -21,8 +21,8 @@ function load(entry,extra={}){const m={exports:{}},code=esbuild.buildSync({entry
  position={latitude:30.3,longitude:106.3,timestamp:Date.now()};fail=false
  const authenticated=load('scripting/wusheng-bus/ride.ts',{Keychain:{get:()=>JSON.stringify({authorization:'Bearer SYNTHETIC_TEST_TOKEN_12345',userId:'1234567890'})},UIImage:{fromBase64String:s=>({image:true}),fromURL:u=>({url:u})}})
  api.post=async(path,body)=>{assert.equal(path,'/api/AppBusiness/GetPayRrcode');assert.equal(body.latitude,30.3);return {code:0,data:{qrcode:'data:image/png;base64,iVBORw0KGgo='}}}
- const before=JSON.stringify(memory);assert.ok(await authenticated.requestRideImage());assert.equal(JSON.stringify(memory),before)
- api.post=async()=>({code:500,data:null});await assert.rejects(()=>authenticated.requestRideImage(),/服务未返回/)
- const fs=require('node:fs'),widget=fs.readFileSync('scripting/wusheng-bus/widget.tsx','utf8'),qr=fs.readFileSync('scripting/wusheng-bus/ride.ts','utf8'),page=fs.readFileSync('scripting/wusheng-bus/ride-page.tsx','utf8');assert.doesNotMatch(widget,/requestRideImage|GetPayRrcode/);assert.doesNotMatch(qr,/Storage\.set|Keychain\.set|console\./);assert.match(page,/setImage\(undefined\);setBusy\(true\)/);assert.match(page,/setTimeout/);
+ memory['wusheng.bus.nearby.v2']={position};const before=JSON.stringify(memory);assert.ok((await authenticated.requestRide()).image);assert.equal(JSON.stringify(memory),before)
+ api.post=async()=>({code:500,data:null});await assert.rejects(()=>authenticated.requestRide(),/服务未返回/)
+ const fs=require('node:fs'),widget=fs.readFileSync('scripting/wusheng-bus/widget.tsx','utf8'),qr=fs.readFileSync('scripting/wusheng-bus/ride.ts','utf8'),page=fs.readFileSync('scripting/wusheng-bus/ride-page.tsx','utf8');assert.doesNotMatch(widget,/requestRide|GetPayRrcode/);assert.doesNotMatch(qr,/Keychain\.set|console\./);assert.match(page,/if\(fromTap\)session.refresh\(\)/);assert.match(qr,/setTimeout/);
  console.log('PASS nearby sorting, route-specific station IDs/numbers, location permissions and expiry, no vehicle ghost pins, cache movement isolation, station-position labeling, QR image validation and foreground-only/no-storage code path.');
 })().catch(e=>{console.error(e);process.exitCode=1});
