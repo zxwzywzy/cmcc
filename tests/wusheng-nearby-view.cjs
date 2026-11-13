@@ -12,5 +12,7 @@ for(const family of ['systemSmall','systemMedium','systemLarge']){
  assert.match(flat(m.exports.NearbyView({family})),/打开实时公交查找附近站台/);
  const reverseOnly={...snapshot,services:snapshot.services.map(row=>({...row,choice:{...row.choice,direction:2}}))};assert.match(flat(m.exports.NearbyView({snapshot:reverseOnly,family})),/本站暂无\s*上行\s*线路/);
  const legacy={...snapshot,services:snapshot.services.map(row=>({...row,positions:[{stationName:'上一站',distanceMeters:500,distanceKind:'stations'}]}))};assert.match(flat(m.exports.NearbyView({snapshot:legacy,family})),/距离待更新/);
+ const passed={...snapshot,services:snapshot.services.map(row=>({...row,items:[],positions:[{stationNo:4,passed:true,distanceMeters:999,distanceKind:'gps',stationName:'已驶过站'}]}))};const passedText=flat(m.exports.NearbyView({snapshot:passed,family}));assert.match(passedText,/暂无待到站车辆/);assert.match(passedText,/已过本站/);assert.match(passedText,/已驶过站/);assert.doesNotMatch(passedText,/预计 \d+ 分钟|暂无车辆/);
+ const noVehicles={...snapshot,services:snapshot.services.map(row=>({...row,items:[],positions:[]}))};assert.match(flat(m.exports.NearbyView({snapshot:noVehicles,family})),/暂无车辆/);
 }
 console.log('PASS mobile widget integration: three sizes, nearest arrival distance matching, stale and legacy cache, zero/failed balance, direction empty state and corner controls. Native rendering still requires iPhone.');

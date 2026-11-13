@@ -25,7 +25,7 @@ export const BusFixedDirectionIntent=AppIntentManager.register({name:'WushengBus
   const stop=anchor?stations.filter(s=>coordinate(s)).sort((a,b)=>distance(anchor,coordinate(a)!)-distance(anchor,coordinate(b)!))[0]:same.length===1?same[0]:undefined
   if(!stop)return
   const rows=await vehicles(previous.line.id,direction),selected=choice();if(selected?.line.id!==previous.line.id||selected.direction!==previous.direction||selected.station.id!==previous.station.id||selected.station.no!==previous.station.no)return
-  const next={line:previous.line,direction,station:stop,destination:stations.at(-1)?.name};saveChoice(next);Storage.set('wusheng.bus.arrival',{choice:next,items:arrivals(rows,next,stations),time:Date.now()})
+  const next={line:previous.line,direction,station:stop,destination:stations.at(-1)?.name};saveChoice(next);Storage.set('wusheng.bus.arrival',{choice:next,items:arrivals(rows,next,stations),vehicleCount:rows.filter(v=>String(v.lineId)===next.line.id&&Number(v.bizType??v.upOrDown)===direction).length,time:Date.now()})
  }finally{noteWidgetInteraction();Widget.reloadAll()}
 }})
 

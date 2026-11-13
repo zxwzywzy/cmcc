@@ -1,7 +1,7 @@
 {
   "name": "Wusheng Bus",
-  "version": "0.4.0",
-  "description": "独立实时公交页、线路详情与组件直达；前台15秒更新定位车辆、显著取码换向",
+  "version": "0.4.1",
+  "description": "修复101等线路的实时车辆坐标识别，区分车辆已过本站与线路无车，支持组件直达地图",
   "author": {
     "name": "zxwzywzy"
   },

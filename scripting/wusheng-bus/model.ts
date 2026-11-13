@@ -3,9 +3,9 @@ export type Station={id:string;name:string;no:number;distance?:number;latitude?:
 export type Choice={line:Line;direction:number;station:Station;destination?:string}
 export function sameChoice(a:Choice|undefined,b:Choice|undefined){return !!a&&!!b&&a.line.id===b.line.id&&a.direction===b.direction&&a.station.id===b.station.id&&a.station.no===b.station.no}
 export type Arrival={stops:number;minutes?:number;atStation:boolean}
-export function estimateLabel(a:Arrival|undefined,live=true){
+export function estimateLabel(a:Arrival|undefined,live=true,vehicleCount=0){
  if(!live)return '预计时间待更新'
- if(!a)return '暂无车辆'
+ if(!a)return vehicleCount>0?'暂无待到站车辆':'暂无车辆'
  if(a.atStation)return '已到站'
  if(a.stops===0)return '本站附近'
  return a.minutes!==undefined&&Number.isFinite(a.minutes)&&a.minutes>0?'预计 '+a.minutes+' 分钟':'预计时间待更新'

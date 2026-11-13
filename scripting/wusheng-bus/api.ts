@@ -14,7 +14,7 @@ export async function loadStations(lineId:string,direction:number){if(!/^\d+$/.t
 export async function balance(a=readAccount()){if(!a)throw Error('请先到账号页从 BoxJS 导入登录');const result=normalizeAccount(await post('/api/WechatInfo/GetUserInfo',{userId:a.userId},a));const owner=readAccount();if(owner?.authorization===a.authorization&&owner?.userId===a.userId)Storage.set('wusheng.bus.balance',result);return result}
 export function choice():Choice|undefined{return Storage.get<Choice>('wusheng.bus.choice')||undefined}
 export function saveChoice(c:Choice){Storage.set('wusheng.bus.choice',c);Storage.set('wusheng.bus.arrival',null)}
-export type BusSnapshot={choice:Choice;items:ReturnType<typeof arrivals>;time:number;stale?:boolean;message?:string}
+export type BusSnapshot={choice:Choice;items:ReturnType<typeof arrivals>;vehicleCount?:number;time:number;stale?:boolean;message?:string}
 export function vehicles(lineId:string,direction:number){return vehicleBatch([{lineId,upOrDown:direction}])}
 export function vehicleBatch(queries:{lineId:string;upOrDown:number}[]):Promise<any[]>{
  return new Promise((resolve,reject)=>{
@@ -26,6 +26,6 @@ export function vehicleBatch(queries:{lineId:string;upOrDown:number}[]):Promise<
 }
 export async function current():Promise<BusSnapshot|undefined>{
  const c=choice();if(!c)return undefined
- try{const [stations,rows]=await Promise.all([loadStations(c.line.id,c.direction),vehicles(c.line.id,c.direction)]);if(!sameChoice(c,choice()))return undefined;const result={choice:c,items:arrivals(rows,c,stations),time:Date.now()};Storage.set('wusheng.bus.arrival',result);return result}
+ try{const [stations,rows]=await Promise.all([loadStations(c.line.id,c.direction),vehicles(c.line.id,c.direction)]);if(!sameChoice(c,choice()))return undefined;const result={choice:c,items:arrivals(rows,c,stations),vehicleCount:rows.filter(v=>String(v.lineId)===c.line.id&&Number(v.bizType??v.upOrDown)===c.direction).length,time:Date.now()};Storage.set('wusheng.bus.arrival',result);return result}
  catch{if(!sameChoice(c,choice()))return undefined;const previous=Storage.get<BusSnapshot>('wusheng.bus.arrival');return previous&&sameChoice(previous.choice,c)?{...previous,stale:true,message:'网络失败，上次数据'}:{choice:c,items:[],time:Date.now(),stale:true,message:'实时通道暂不可用'}}
 }

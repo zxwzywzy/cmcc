@@ -1,5 +1,5 @@
 import { Button,HStack,Spacer,Text,Link,Script } from 'scripting'
-import { meters,destination,type NearbySnapshot } from './nearby'
+import { meters,destination,vehicleSummary,type NearbySnapshot } from './nearby'
 import { estimateLabel,stationProgress } from './model'
 import { servicePage,directionLabel } from './paging'
 import { BusPageIntent,BusDirectionIntent } from './app_intents'
@@ -12,8 +12,8 @@ export function NearbyView({snapshot,family,interactive=false,slot='',card,cardS
  const routes:WidgetRoute[]=page.rows.map(r=>{
   const a=r.items[0],v=a?r.positions.find(p=>p.stationNo!==undefined&&!p.passed&&r.choice.station.no-p.stationNo===a.stops):undefined
   const measure=live&&a?(v?.distanceMeters!==undefined?(v.distanceKind==='stations'?'站距估算 ':'直线距本站 ')+(v.distanceMeters<1000?Math.round(v.distanceMeters)+'米':(v.distanceMeters/1000).toFixed(1)+'公里'):'距离待更新'):''
-  const detail=live?[a?a.atStation?'已到站':a.stops===0?'本站附近':'还剩 '+a.stops+' 站':'暂无车辆',measure,v?.stationName?'近'+v.stationName:''].filter(Boolean).join(' · '):'位置待更新'
-  return {id:r.choice.line.id+':'+r.choice.direction,name:r.choice.line.name,direction:destination(r.choice),eta:estimateLabel(a,live),minutes:live&&!a?.atStation&&a?.minutes!==undefined&&a.minutes>0?a.minutes:undefined,detail,progress:stationProgress(a,r.choice.station.no,live),url:routeURL(r.choice)}
+  const detail=live?a?[a.atStation?'已到站':a.stops===0?'本站附近':'还剩 '+a.stops+' 站',measure,v?.stationName?'近'+v.stationName:''].filter(Boolean).join(' · '):vehicleSummary(r):'位置待更新'
+  return {id:r.choice.line.id+':'+r.choice.direction,name:r.choice.line.name,direction:destination(r.choice),eta:estimateLabel(a,live,r.positions.length),minutes:live&&!a?.atStation&&a?.minutes!==undefined&&a.minutes>0?a.minutes:undefined,detail,progress:stationProgress(a,r.choice.station.no,live),url:routeURL(r.choice)}
  })
  const footer=interactive?<HStack spacing={small?3:6}>{page.count>1&&s?.stop?<Button title={small?'线路':'线路 '+(page.index+1)+'/'+page.count} buttonStyle="plain" font={small?9:10} intent={BusPageIntent({stopId:s.stop.id,family,slot,step:1})}/>:<Link url={Script.createRunURLScheme(Script.name,{page:'live',select:'1'})}><Text font={small?9:10}>线路</Text></Link>}<Spacer minLength={0}/><Link url={Script.createRunURLScheme(Script.name,{page:'ride'})}><RideAction small={small}/></Link><Spacer minLength={0}/><Button title="换向" {...directionAppearance(small)} disabled={!s?.stop} intent={BusDirectionIntent({stopId:s?.stop?.id||'',family,slot})}/></HStack>:null
  return <WidgetCard station={s?.stop?.name||'附近公交'} subtitle={s?.stop?meters(s.stop.meters)+' · '+page.routeCount+' 路 · '+directionLabel(page.direction):'打开实时公交自动定位'} routes={routes} family={family} time={s?.time} card={card} footer={footer} resting={resting} empty={s?.stop?'本站暂无'+directionLabel(page.direction)+'线路，点击换向':'打开实时公交查找附近站台'}/>

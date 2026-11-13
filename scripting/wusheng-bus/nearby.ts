@@ -10,7 +10,13 @@ const CACHE='wusheng.bus.nearby.v2'
 export function cachedNearby(){return Storage.get<NearbySnapshot>(CACHE)||undefined}
 export const isNearby=()=>Storage.get('wusheng.bus.mode')!=='manual'
 export function setMode(mode:'nearby'|'manual'){Storage.set('wusheng.bus.mode',mode)}
-export function coordinate(v:any):Coordinate|undefined{const latitude=finite(v?.latitude),longitude=finite(v?.longitude);return latitude!==undefined&&longitude!==undefined&&Math.abs(latitude)<=90&&Math.abs(longitude)<=180&&!(latitude===0&&longitude===0)?{latitude,longitude}:undefined}
+export function coordinate(v:any):Coordinate|undefined{
+ for(const pair of [[v?.latitude,v?.longitude],[v?.lat,v?.lng]]){
+  const latitude=finite(pair[0]),longitude=finite(pair[1])
+  if(latitude!==undefined&&longitude!==undefined&&Math.abs(latitude)<=90&&Math.abs(longitude)<=180&&!(latitude===0&&longitude===0))return {latitude,longitude}
+ }
+ return undefined
+}
 export function normalizeNearby(body:any):NearbyStop[]{
  if(body?.code!==0||!Array.isArray(body?.data?.data))throw Error('附近站台查询失败')
  return body.data.data.flatMap((s:any)=>{
@@ -31,7 +37,7 @@ export function positions(rows:any[],service:Service,target?:Coordinate):Vehicle
   const source=station as Station&Partial<Coordinate>|undefined
   const no=finite(v.stationNo),targetNo=service.choice.station.no,segments=no===undefined?[]:service.stations.filter(s=>s.no>Math.min(no,targetNo)&&s.no<=Math.max(no,targetNo))
   const estimate=no!==undefined&&segments.length===Math.abs(no-targetNo)&&segments.every(s=>s.distance!==undefined&&s.distance>=0)?segments.reduce((sum,s)=>sum+s.distance!,0):undefined
-  return {label:service.choice.line.name,stationNo:no,stationName:station?.name||(finite(v.stationNo)!==undefined?'第'+v.stationNo+'站（站名未返回）':undefined),coordinate:c||coordinate(source),gps:!!c,distanceMeters:c&&target?distance(c,target):estimate,distanceKind:c&&target?'gps':estimate!==undefined?'stations':undefined,passed:finite(v.stationNo)!==undefined?Number(v.stationNo)>service.choice.station.no:undefined}
+  return {label:service.choice.line.name,stationNo:no,stationName:station?.name||text(v.stationName)||(finite(v.stationNo)!==undefined?'第'+v.stationNo+'站（站名未返回）':undefined),coordinate:c||coordinate(source),gps:!!c,distanceMeters:c&&target?distance(c,target):estimate,distanceKind:c&&target?'gps':estimate!==undefined?'stations':undefined,passed:finite(v.stationNo)!==undefined?Number(v.stationNo)>service.choice.station.no:undefined}
  })
 }
 export async function freshPosition(force=true):Promise<Position>{
