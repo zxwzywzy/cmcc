@@ -1,12 +1,12 @@
 # Paperclip Cookie · Quantumult X
 
-## 新增：武胜公交 Scripting 小组件（0.2.4 试用版）
+## 新增：武胜公交 Scripting 小组件（0.2.5 试用版）
 
-[下载安装包](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus-0.2.4.scripting) · [安装说明与验证范围](scripting/wusheng-bus/README.md)
+[下载安装包](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus-0.2.5.scripting) · [圈 X 登录抓取订阅](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/Wusheng-Bus-Login.conf) · [安装说明与验证范围](scripting/wusheng-bus/README.md)
 
-根据当前位置查最近站台、距离与车辆上报的所在站；支持小中大尺寸，参数留空。仅点击“乘车码”或取码页刷新按钮时请求新码及余额，无后台或定时取码。已验证本人授权取得真实 PNG 码图，扫码乘车仍待设备验证。登录沿用本人微信手机号授权的加密导入，不含独立短信登录。个人凭据不在公开包中。
+根据当前位置查最近站台、距离与车辆上报的所在站；支持小中大尺寸，参数留空。仅点击“乘车码”或取码页刷新按钮时请求新码及余额，无后台或定时取码。已验证本人授权取得真实 PNG 码图，扫码乘车仍待设备验证。登录改为圈 X 抓取微信小程序授权，再从 BoxJS 点击导入，验证后保存本机 Keychain，无需账号文件。个人凭据不在公开包中。
 
-0.2.4 加入点击取码及余额页；取码不再强制重新定位，无可用缓存时使用公交站参考坐标。保留手机端上传的深色组件、上下行切换、附近组件余额与精简首页。打开脚本 → 更多 → 更新脚本，确认覆盖同名脚本即可。
+0.2.5 新增“圈 X 抓取登录”：在脚本里添加专用订阅，微信武胜公交“我的”页刷新，回脚本点“从圈 X 导入登录”。沿用运营商组件已配置的 BoxJS、重写与 MITM。保留手机端样式及0.2.4的点击取码和余额页。打开脚本 → 更多 → 更新脚本，确认覆盖同名脚本即可。
 
 ## 新增：四家运营商余量小组件（0.2.3 电信短信验证码登录）
 

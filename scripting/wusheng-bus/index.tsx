@@ -1,18 +1,26 @@
-import { Button, DocumentPicker, List, Navigation, NavigationLink, Script, Section, SecureField, Text, TextField, Widget, useEffect, useState } from 'scripting'
+import { Button, List, Navigation, NavigationLink, Script, Section, Text, TextField, Widget, useEffect, useState } from 'scripting'
 import { balance, choice, current, loadLines, loadStations, saveChoice, type BusSnapshot } from './api'
-import { decodeAccount, forgetAccount, readAccount, saveAccount } from './account'
+import { forgetAccount, readAccount } from './account'
+import { loginFromBoxJS,boxHost,captureInstallURL,LOGIN_SUBSCRIPTION } from './login'
 import { clock, arrivalLabel } from './view'
 import type { Line, Station } from './model'
 import {isNearby,setMode,nearbyCurrent,cachedNearby,clearNearby,meters,destination,vehicleSummary,type NearbySnapshot} from './nearby'
 
 import {LiveNearbyMap} from './map'
 import {RidePage,presentRide} from './ride-page'
-function ImportAccount({changed}:{changed:()=>void}){
- const [password,setPassword]=useState(''),[note,setNote]=useState(''),[busy,setBusy]=useState(false)
- async function importFile(){setBusy(true);try{const files=await DocumentPicker.pickFiles({types:['public.json'],allowsMultipleSelection:false});if(!files.length)return
- const account=decodeAccount(await FileManager.readAsString(files[0]),password),verified=await balance(account);saveAccount(account);Storage.set('wusheng.bus.balance',verified);setPassword('');setNote('已验证并保存账号，返回首页即可查询余额。');Widget.reloadAll();changed()
- }catch(e){setNote((e as Error).message)}finally{setBusy(false)}}
- return <List navigationTitle="导入账号"><Section header={<Text>私有账号文件</Text>} footer={<Text>选择单独提供的加密 JSON 文件，填写另一份口令文件里的口令。账号保存在本机钥匙串，不写入安装包。</Text>}><SecureField title="导入口令" value={password} onChanged={setPassword}/><Button title={busy?'正在验证…':'选择加密文件并导入'} disabled={busy||!password} action={importFile}/>{note?<Text>{note}</Text>:null}</Section></List>
+function LoginAccount({changed}:{changed:()=>void}){
+ const [host,setHost]=useState(boxHost()),[note,setNote]=useState(''),[busy,setBusy]=useState(false)
+ async function connect(){if(busy)return;setBusy(true);setNote('正在读取圈 X 抓取的授权并验证…');try{const card=await loginFromBoxJS(host);setNote('登录成功'+(card.balance!==undefined?' · 余额 ¥'+card.balance.toFixed(2):'')+'。可以关闭抓取订阅了。');Widget.reloadAll();changed()}catch(e){setNote((e as Error).message)}finally{setBusy(false)}}
+ return <List navigationTitle="圈 X 抓取登录">
+ <Section header={<Text>和运营商组件一样登录</Text>} footer={<Text>沿用你已配置的 BoxJS、圈 X 重写与 MITM。先在微信小程序正常登录，再抓取当前授权；不需要账号文件或手填 Token。</Text>}>
+ <Button title="1. 添加圈 X 抓取订阅" action={async()=>{try{await Safari.openURL(captureInstallURL())}catch{setNote('未能打开圈 X，请复制下面的订阅链接添加到重写资源。')}}}/>
+ <Button title="2. 打开微信" action={async()=>{await Safari.openURL('weixin://')}}/>
+ <Text>进入微信“武胜公交”→“我的”，刷新个人信息。出现“授权已抓取”通知后，回这里点击下一步。</Text>
+ <Button title={busy?'正在验证…':'3. 从圈 X 导入登录'} disabled={busy} action={connect}/>
+ {note?<Text>{note}</Text>:null}
+ </Section>
+ <Section header={<Text>连接设置</Text>} footer={<Text>默认 boxjs.com；如果运营商组件使用 boxjs.net，这里也填写 boxjs.net。登录成功后只保存在本机钥匙串，过期时重新抓取即可。</Text>}><TextField title="BoxJS 域名" value={host} onChanged={setHost}/><Button title="复制抓取订阅链接" action={async()=>{await Pasteboard.setString(LOGIN_SUBSCRIPTION);setNote('已复制订阅链接，可在圈 X 重写资源中添加。')}}/></Section>
+ </List>
 }
 function Stations({line,changed}:{line:Line;changed:()=>void}){
  const [direction,setDirection]=useState(1),[rows,setRows]=useState<Station[]>([]),[note,setNote]=useState('加载站点…')
@@ -28,7 +36,7 @@ function Lines({changed}:{changed:()=>void}){
 function Guide(){
  return <List navigationTitle="使用说明">
  <Section header={<Text>定位与到站</Text>}><Text>允许精确定位后查询最近站台；站台距离是直线距离。车辆到站站数来自公交系统，预计分钟仅供参考。桌面刷新时间由 iOS 安排，并非持续实时追踪。</Text><Text>地图中蓝色是你、绿色是站台、橙色是车辆；标注“站点位置”的车辆图钉不代表车辆精确 GPS。</Text></Section>
- <Section header={<Text>账号与乘车码</Text>}><Text>查询到站无需账号；余额和乘车码需要导入本人已登录微信的授权。公交小程序通过微信登录并授权绑定手机号，本脚本不提供独立短信登录。</Text><Text>乘车码只在前台获取和短时展示。取码失败时请使用微信小程序。</Text></Section>
+ <Section header={<Text>账号与乘车码</Text>}><Text>查询到站无需账号；余额和乘车码通过圈 X 抓取微信“武胜公交”的登录授权，再回脚本点击导入登录。无需账号文件，登录失效时重新抓取即可。</Text><Text>只有点击“乘车码”或页内刷新按钮时才取码并更新余额，取码失败可回微信使用。</Text></Section>
  <Section header={<Text>添加桌面组件</Text>}><Text>长按桌面 → 添加 Scripting 小组件 → 编辑小组件 → 选择“武胜公交”。参数留空，支持小、中、大尺寸。</Text></Section>
  <Section header={<Text>组件叠放</Text>}><Text>添加多个同尺寸 Scripting 组件，参数分别填写“叠放1”“叠放2”等，再在桌面拖到一起。各层页码与方向分别保存。</Text></Section>
  </List>
@@ -37,10 +45,10 @@ function More({changed}:{changed:()=>void}){
  const [accountRevision,setAccountRevision]=useState(0)
  const hasAccount=!!readAccount()
  return <List navigationTitle="更多">
- <Section header={<Text>账号管理</Text>}><NavigationLink destination={<ImportAccount changed={()=>{setAccountRevision(n=>n+1);changed()}}/>}><Text>{hasAccount?'重新导入账号':'导入私有账号'}</Text></NavigationLink>{hasAccount?<Button title="移除本机账号" action={()=>{forgetAccount();setAccountRevision(n=>n+1);changed();Widget.reloadAll()}}/>:null}</Section>
+ <Section header={<Text>账号管理</Text>}><NavigationLink destination={<LoginAccount changed={()=>{setAccountRevision(n=>n+1);changed()}}/>}><Text>{hasAccount?'更新微信登录授权':'圈 X 抓取登录'}</Text></NavigationLink>{hasAccount?<Button title="移除本机账号" action={()=>{forgetAccount();setAccountRevision(n=>n+1);changed();Widget.reloadAll()}}/>:null}</Section>
  <Section header={<Text>定位数据</Text>} footer={<Text>清除后附近站台需要重新允许定位并查询；固定站台选择不会被删除。</Text>}><Button title="清除本机定位缓存" action={()=>{clearNearby();changed();Widget.reloadAll()}}/></Section>
  <Section><NavigationLink destination={<Guide/>}><Text>使用说明与桌面组件</Text></NavigationLink></Section>
- <Section header={<Text>脚本更新 · 0.2.4</Text>} footer={<Text>更新后重新运行脚本并刷新桌面组件。</Text>}><Button title="更新脚本" action={async()=>{await Safari.openURL(Script.createImportScriptsURLScheme(['https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus.scripting']))}}/></Section>
+ <Section header={<Text>脚本更新 · 0.2.5</Text>} footer={<Text>更新后重新运行脚本并刷新桌面组件。</Text>}><Button title="更新脚本" action={async()=>{await Safari.openURL(Script.createImportScriptsURLScheme(['https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus.scripting']))}}/></Section>
  </List>
 }
 function Home(){
@@ -68,7 +76,7 @@ function Home(){
  
  </Section>
  <Section header={<Text>出行操作</Text>}><Button title="乘车码" action={async()=>{await Navigation.present({element:<RidePage fromTap/>});setCard(readAccount()?Storage.get('wusheng.bus.balance')||undefined:undefined)}}/><NavigationLink destination={<Lines changed={changed}/>}><Text>选择固定线路和候车站</Text></NavigationLink></Section>
- <Section header={<Text>公交卡</Text>} footer={<Text>{note||'余额以公交系统返回为准，查询失败时显示上次数据。'}</Text>}><Text>{readAccount()?(card?.balance!==undefined?'余额 ¥'+card.balance.toFixed(2):'接口暂未返回余额'):'尚未导入账号'}</Text>{readAccount()&&card?<Text>{(card.cardTail?'卡尾号 '+card.cardTail+' · ':'')+'更新于 '+clock(card.fetchedAt)}</Text>:null}</Section>
+ <Section header={<Text>公交卡</Text>} footer={<Text>{note||'余额以公交系统返回为准，查询失败时显示上次数据。'}</Text>}><Text>{readAccount()?(card?.balance!==undefined?'余额 ¥'+card.balance.toFixed(2):'接口暂未返回余额'):'尚未登录'}</Text>{readAccount()&&card?<Text>{(card.cardTail?'卡尾号 '+card.cardTail+' · ':'')+'更新于 '+clock(card.fetchedAt)}</Text>:null}<NavigationLink destination={<LoginAccount changed={changed}/>}><Text>{readAccount()?'更新微信登录授权':'圈 X 抓取登录'}</Text></NavigationLink></Section>
  
  
  

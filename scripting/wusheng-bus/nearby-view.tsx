@@ -35,7 +35,7 @@ export function NearbyView({snapshot,family,interactive=false,slot='',card,cardS
  </VStack>
  <Spacer minLength={0}/>
  {s?.message?<Text font={9} foregroundStyle={muted} lineLimit={1}>{s.message}</Text>:null}
- {!small?<Text font={10} foregroundStyle={muted} lineLimit={1}>{card?.balance!==undefined?(cardStale?'上次余额 ':'公交卡余额 ')+'¥'+card.balance.toFixed(2)+' · '+clock(card.fetchedAt):card?'余额未返回':'余额需导入账号'}</Text>:null}
+ {!small?<Text font={10} foregroundStyle={muted} lineLimit={1}>{card?.balance!==undefined?(cardStale?'上次余额 ':'公交卡余额 ')+'¥'+card.balance.toFixed(2)+' · '+clock(card.fetchedAt):card?'余额未返回':'余额需登录'}</Text>:null}
  <HStack spacing={5}><Text font={small?9:large?11:10} foregroundStyle={muted} lineLimit={1}>{s?(s.stale?'缓存 · ':s.locationStale?'旧定位 · ':'更新 · ')+clock(s.time):'尚未定位'}</Text><Spacer minLength={0}/>{interactive&&page.count>1&&s?.stop?<Button title={(page.index+1)+'/'+page.count+' 下页'} buttonStyle="plain" font={small?9:large?12:11} intent={BusPageIntent({stopId:s.stop.id,family,slot,step:1})}/>:null}{!small&&interactive?<Link url={launch}><Text font={11} foregroundStyle={cyan}>乘车码</Text></Link>:null}</HStack>
  {interactive?<HStack spacing={8}><Button title={small?'刷新':'刷新定位'} buttonStyle="plain" font={small?10:12} intent={BusLocateIntent(undefined)}/><Spacer minLength={0}/><Button title={'换向 · '+directionLabel(page.direction)} buttonStyle="plain" font={small?10:12} disabled={!s?.stop} intent={BusDirectionIntent({stopId:s?.stop?.id||'',family,slot})}/></HStack>:null}
  </VStack>

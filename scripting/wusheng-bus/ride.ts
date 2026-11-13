@@ -14,7 +14,7 @@ export function rideCoordinate(){
 }
 // Only the explicit foreground tap session calls this function. No timers or widget entry call it.
 export async function requestRide(account=readAccount()){
- if(!account)throw Error('请先导入自己的微信登录授权')
+ if(!account)throw Error('请先在首页通过圈 X 抓取登录')
  const p=rideCoordinate()
  const body=await post('/api/AppBusiness/GetPayRrcode',{pageIndex:1,pageSize:10,userId:account.userId,latitude:p.latitude,longitude:p.longitude},account)
  if(body?.code!==0||typeof body?.data?.qrcode!=='string'||!body.data.qrcode){
@@ -37,7 +37,7 @@ export function createRideSession(changed:(state:RideState)=>void,balanceUpdated
    locked=true;clear();emit({...state,image:undefined,issuedAt:undefined,busy:true,note:'正在获取新乘车码和余额…'})
    try{
     const account=readAccount()
-    if(!account){emit({cardStale:true,busy:false,note:'请先导入自己的微信登录授权'});return}
+    if(!account){emit({cardStale:true,busy:false,note:'请先在首页通过圈 X 抓取登录'});return}
     const [qr,profile]=await Promise.allSettled([requestRide(account),balance(account)])
     if(disposed)return
     if(!sameAccount(account,readAccount())){emit({cardStale:true,busy:false,note:'账号已变化，请重新点击获取'});return}

@@ -1,7 +1,7 @@
 {
   "name": "Wusheng Bus",
-  "version": "0.2.4",
-  "description": "附近站台、车辆站点与地图；点击获取乘车码及余额，无定时取码",
+  "version": "0.2.5",
+  "description": "圈 X 抓取登录，附近站台、车辆地图；点击获取乘车码及余额",
   "author": {
     "name": "zxwzywzy"
   },

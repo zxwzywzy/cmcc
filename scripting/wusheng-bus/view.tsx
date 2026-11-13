@@ -16,7 +16,7 @@ export function BusView({snapshot,card,family,cardStale=false}:{snapshot?:BusSna
  {a?.minutes!==undefined&&!snapshot?.stale?<Text font={small?10:12} foregroundStyle={muted}>{'预计约 '+a.minutes+' 分钟 · 仅供参考'}</Text>:null}
  {large?snapshot?.items.slice(1).map((v,i)=><HStack key={i}><Text font={13}>{'后续车辆 '+(i+2)}</Text><Spacer minLength={0}/><Text font={13}>{arrivalLabel(v)}</Text></HStack>):null}
  <Spacer minLength={0}/>
- <HStack spacing={4}><Text font={small?10:12} foregroundStyle={muted} lineLimit={1}>{card?(cardStale?'上次余额 · ':'公交卡 · ')+amount:'余额需导入账号'}</Text><Spacer minLength={0}/>{!small&&card?<Text font={10} foregroundStyle={muted}>{clock(card.fetchedAt)}</Text>:null}</HStack>
+ <HStack spacing={4}><Text font={small?10:12} foregroundStyle={muted} lineLimit={1}>{card?(cardStale?'上次余额 · ':'公交卡 · ')+amount:'余额需登录'}</Text><Spacer minLength={0}/>{!small&&card?<Text font={10} foregroundStyle={muted}>{clock(card.fetchedAt)}</Text>:null}</HStack>
  <Text font={9} foregroundStyle={muted} lineLimit={1}>{snapshot?(snapshot.stale?'缓存数据 · ':'更新于 ')+clock(snapshot.time):'打开脚本设置站点'}</Text>
  </VStack>
 }
