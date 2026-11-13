@@ -1,7 +1,7 @@
 {
   "name": "Wusheng Bus",
-  "version": "0.3.0",
-  "description": "四种组件布局、手动休眠与通勤更新、预计到站、账号订单记录及点击乘车码",
+  "version": "0.4.0",
+  "description": "独立实时公交页、线路详情与组件直达；前台15秒更新定位车辆、显著取码换向",
   "author": {
     "name": "zxwzywzy"
   },

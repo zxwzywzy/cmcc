@@ -1,6 +1,7 @@
 export type Line={id:string;name:string;start:string;end:string}
 export type Station={id:string;name:string;no:number;distance?:number;latitude?:number;longitude?:number}
 export type Choice={line:Line;direction:number;station:Station;destination?:string}
+export function sameChoice(a:Choice|undefined,b:Choice|undefined){return !!a&&!!b&&a.line.id===b.line.id&&a.direction===b.direction&&a.station.id===b.station.id&&a.station.no===b.station.no}
 export type Arrival={stops:number;minutes?:number;atStation:boolean}
 export function estimateLabel(a:Arrival|undefined,live=true){
  if(!live)return '预计时间待更新'

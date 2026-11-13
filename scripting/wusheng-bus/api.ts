@@ -1,7 +1,7 @@
 import { fetch, WebSocket } from 'scripting'
 import JSONBig from './vendor/json-bigint.js'
 import { readAccount,type Account } from './account'
-import { normalizeLines,normalizeStations,normalizeAccount,arrivals,type Choice,type Station } from './model'
+import { normalizeLines,normalizeStations,normalizeAccount,arrivals,sameChoice,type Choice,type Station } from './model'
 const parse=JSONBig({storeAsString:true,protoAction:'ignore',constructorAction:'ignore'}).parse
 const API='https://wsapi.wskyzx.com:26110'
 const paths=new Set(['/api/AppBusiness/GetBusLine','/api/AppBusiness/GetBusLineStationsByLId','/api/WechatInfo/GetUserInfo','/api/AppBusiness/GetBusStations','/api/AppBusiness/GetPayRrcode','/api/AppBusiness/GetConsumedAndRechargeRecord'])
@@ -26,6 +26,6 @@ export function vehicleBatch(queries:{lineId:string;upOrDown:number}[]):Promise<
 }
 export async function current():Promise<BusSnapshot|undefined>{
  const c=choice();if(!c)return undefined
- try{const [stations,rows]=await Promise.all([loadStations(c.line.id,c.direction),vehicles(c.line.id,c.direction)]);const result={choice:c,items:arrivals(rows,c,stations),time:Date.now()};Storage.set('wusheng.bus.arrival',result);return result}
- catch{const previous=Storage.get<BusSnapshot>('wusheng.bus.arrival');return previous&&previous.choice.line.id===c.line.id&&previous.choice.direction===c.direction&&previous.choice.station.id===c.station.id?{...previous,stale:true,message:'网络失败，上次数据'}:{choice:c,items:[],time:Date.now(),stale:true,message:'实时通道暂不可用'}}
+ try{const [stations,rows]=await Promise.all([loadStations(c.line.id,c.direction),vehicles(c.line.id,c.direction)]);if(!sameChoice(c,choice()))return undefined;const result={choice:c,items:arrivals(rows,c,stations),time:Date.now()};Storage.set('wusheng.bus.arrival',result);return result}
+ catch{if(!sameChoice(c,choice()))return undefined;const previous=Storage.get<BusSnapshot>('wusheng.bus.arrival');return previous&&sameChoice(previous.choice,c)?{...previous,stale:true,message:'网络失败，上次数据'}:{choice:c,items:[],time:Date.now(),stale:true,message:'实时通道暂不可用'}}
 }

@@ -17,7 +17,8 @@ async function main(){
  let card=account?Storage.get<Awaited<ReturnType<typeof balance>>>('wusheng.bus.balance')||undefined:undefined
  let cardStale=!!card&&(!Number.isFinite(card.fetchedAt)||Date.now()-card.fetchedAt>5*60000)
  if(!resting&&!widgetReloadIsLocal()){
-  const [bus,result]=await Promise.allSettled([nearby?nearbyCurrent({widget:true}):current(),account?balance():Promise.resolve(undefined)])
+  const needsBalance=!!account&&(!card||!Number.isFinite(card.fetchedAt)||Date.now()-card.fetchedAt>=5*60000)
+  const [bus,result]=await Promise.allSettled([nearby?nearbyCurrent({widget:true,force:true}):current(),needsBalance?balance():Promise.resolve(card)])
   if(bus.status==='fulfilled')snapshot=bus.value
   else if(snapshot)snapshot={...snapshot,stale:true}
   if(result.status==='fulfilled'){card=result.value;cardStale=false}
@@ -36,6 +37,6 @@ async function main(){
 }
 function cachedBus():BusSnapshot|undefined{
  const saved=Storage.get<BusSnapshot>('wusheng.bus.arrival'),selected=choice()
- return saved&&selected&&saved.choice.line.id===selected.line.id&&saved.choice.direction===selected.direction&&saved.choice.station.id===selected.station.id?saved:undefined
+ return saved&&selected&&saved.choice.line.id===selected.line.id&&saved.choice.direction===selected.direction&&saved.choice.station.id===selected.station.id&&saved.choice.station.no===selected.station.no?saved:undefined
 }
 main()

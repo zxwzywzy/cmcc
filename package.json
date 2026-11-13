@@ -6,7 +6,7 @@
     "build": "node tools/build.cjs",
     "test": "node tests/carrier.cjs && node tests/hub.cjs && node tests/widget-routing.cjs && node tests/carrier-intent.cjs && node tests/carrier-title.cjs && node tests/unicom-risksync.cjs && node tests/panorama-progress.cjs && node tests/carrier-layout-matrix.cjs && node tests/carrier-history.cjs && node tests/carrier-extra.cjs && node tests/telecom-login.cjs && node tests/account-pages.cjs && node tests/telecom-sms.cjs",
     "build:bus": "node tools/build-bus.cjs",
-    "test:bus": "node tests/wusheng-widget.cjs && node tests/wusheng-nearby.cjs && node tests/wusheng-nearby-view.cjs && node tests/wusheng-pages.cjs && node tests/wusheng-ride.cjs && node tests/wusheng-login.cjs && node tests/wusheng-app.cjs && node tests/wusheng-layouts.cjs && node tests/wusheng-orders.cjs && node tests/wusheng-runtime.cjs",
+    "test:bus": "node tests/wusheng-widget.cjs && node tests/wusheng-nearby.cjs && node tests/wusheng-nearby-view.cjs && node tests/wusheng-pages.cjs && node tests/wusheng-ride.cjs && node tests/wusheng-login.cjs && node tests/wusheng-app.cjs && node tests/wusheng-layouts.cjs && node tests/wusheng-orders.cjs && node tests/wusheng-runtime.cjs && node tests/wusheng-transit.cjs",
     "package:bus": "python tools/package-bus.py"
   },
   "devDependencies": {

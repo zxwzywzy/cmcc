@@ -6,12 +6,14 @@ import { BusView,clock } from './view'
 import type { Line,Station } from './model'
 import { isNearby,setMode,nearbyCurrent,cachedNearby,meters,destination,type NearbySnapshot } from './nearby'
 import { NearbyView } from './nearby-view'
-import { LiveNearbyMap } from './map'
+import { RealtimePage } from './transit-page'
 import { RidePage } from './ride-page'
 import { appearance,saveAppearance,saveStyle,BUS_STYLES,type Appearance,type BusStyle,type BusFamily } from './appearance'
 import { widgetRuntime,saveWidgetRuntime,type WidgetRuntime } from './runtime'
 import { estimateLabel } from './model'
 import { OrdersPage } from './orders-page'
+import { parseRouteRequest,type RouteRequest } from './route-links'
+import { APP_VERSION } from './version'
 
 function LoginHelp({changed}:{changed:()=>void}){
  const [note,setNote]=useState(''),[busy,setBusy]=useState(false)
@@ -27,6 +29,7 @@ function AccountsPage({changed,active,close}:{changed:()=>void;active:boolean;cl
  return <List navigationTitle="账号" toolbar={{cancellationAction:close}}>
  <Section><HStack spacing={12} padding={{vertical:5}}><Image systemName="creditcard.fill" font={25} foregroundStyle={{light:'#006B72',dark:'#39D4E0'}}/><VStack alignment="leading" spacing={5}><Text font={12} foregroundStyle="secondaryLabel">公交卡余额</Text><Text font={34} fontWeight="semibold" monospacedDigit>{readAccount()&&card?.balance!==undefined?'¥'+card.balance.toFixed(2):'—'}</Text><Text font={10} foregroundStyle="secondaryLabel">{readAccount()&&card?(card.cardTail?'尾号 '+card.cardTail+' · ':'')+clock(card.fetchedAt):'导入登录后查询'}</Text></VStack><Spacer/><Button title="刷新" disabled={busy||!readAccount()} action={refreshBalance}/></HStack></Section>
  <Section><NavigationLink destination={<OrdersPage active={active} ownerId={readAccount()?.userId||''}/>}><HStack><Image systemName="list.bullet.rectangle"/><Text>订单记录</Text><Spacer/></HStack></NavigationLink><Button title={busy?'正在导入…':'从 BoxJS 导入'} disabled={busy} action={connect}/><NavigationLink destination={<LoginHelp changed={changed}/>}><Text>登录与抓取</Text></NavigationLink>{note?<Text font={11} foregroundStyle="secondaryLabel">{note}</Text>:null}</Section>
+ <Section><HStack><Text font={12} foregroundStyle="secondaryLabel">当前版本</Text><Spacer/><Text font={12} foregroundStyle="secondaryLabel">{APP_VERSION}</Text></HStack></Section>
  </List>
 }
 function Stations({line,changed}:{line:Line;changed:()=>void}){
@@ -45,18 +48,19 @@ function NearbySettings({changed}:{changed:()=>void}){
  async function refresh(locate=false){if(busy)return;setBusy(true);setNote('');try{if(locate){setMode('nearby');setNear(await nearbyCurrent({enable:true,force:true}))}else if(isNearby())setNear(await nearbyCurrent());else setSnapshot(await current());Widget.reloadAll();changed()}catch(e){setNote((e as Error).message)}finally{setBusy(false)}}
  const c=choice()
  return <List navigationTitle="站台与定位"><Section header={<Text>{isNearby()?'附近站台':'固定候车站'}</Text>}>
- {isNearby()?<><Text>{near?.stop?near.stop.name+' · 距你 '+meters(near.stop.meters):'点击下方按钮查找最近站台'}</Text>{near?.services.slice(0,3).map((s,i)=><Text key={i}>{s.choice.line.name+' · '+estimateLabel(s.items[0],!near.stale&&Date.now()-near.time<120000)+' · '+destination(s.choice)}</Text>)}{near?.stop?<NavigationLink destination={<LiveNearbyMap initial={near}/>}><Text>全部线路与地图</Text></NavigationLink>:null}</>:<><Text>{c?c.line.name+' · '+c.station.name:'尚未选择候车站'}</Text><Text>{estimateLabel(snapshot?.items[0],!!snapshot&&!snapshot.stale&&Date.now()-snapshot.time<120000)}</Text></>}
- <Button title={busy?'正在查询…':'用当前位置查最近站台'} disabled={busy} action={()=>refresh(true)}/><Button title="刷新到站" disabled={busy} action={()=>refresh()}/>{note?<Text>{note}</Text>:null}<NavigationLink destination={<Lines changed={changed}/>}><Text>选择固定线路、方向和站点</Text></NavigationLink></Section></List>
+ <Text>{isNearby()?near?.stop?.name||'附近站台自动查询':c?c.line.name+' · '+c.station.name:'尚未选择候车站'}</Text>
+ <Button title={busy?'正在设置…':'使用附近站台'} disabled={busy} action={()=>refresh(true)}/>{note?<Text>{note}</Text>:null}<NavigationLink destination={<Lines changed={changed}/>}><Text>选择固定线路、方向和站点</Text></NavigationLink></Section></List>
 }
-function Guide(){return <List navigationTitle="使用说明"><Section header={<Text>登录</Text>}><Text>圈 X 更新抓取重写，在微信小程序产生登录请求后，回账号页点“从 BoxJS 导入”。</Text></Section><Section header={<Text>组件运行</Text>}><Text>默认平时休眠，点击组件刷新一次。可在设置中关闭组件，或启用通勤时段、持续更新。关闭组件不影响手动取码与订单查询。</Text></Section><Section header={<Text>预计到站</Text>}><Text>预计分钟依据车辆上报车速和完整站距计算。车辆停驶、信息不全或数据未更新时，显示“预计时间待更新”。进度条表示车辆沿站序前往本站的进度，供候车参考。</Text></Section><Section header={<Text>组件样式</Text>}><Text>小、中、大尺寸分别选择全景、到站卡、账单卡或极简；叠放参数仍可填写“叠放1”“叠放2”等。</Text></Section></List>}
-function SettingsPage({changed,close}:{changed:()=>void;close:any}){
+function Guide(){return <List navigationTitle="使用说明"><Section header={<Text>实时公交</Text>}><Text>独立页每条线路只显示一个当前方向；切换线路或换向后，点线路查看站点、地图、车辆与预计时间。前台每15秒轮询定位和车辆，切页或退到后台停止。</Text></Section><Section header={<Text>桌面组件</Text>}><Text>可点击组件中的具体线路打开对应详情。“乘车码”和“换向”已突出显示，定位自动更新。组件提交15秒刷新请求，iOS 决定实际执行频率。</Text></Section><Section header={<Text>登录</Text>}><Text>圈 X 抓取后，在账号页点“从 BoxJS 导入”。只有点击乘车码时才获取新码；版本号在账号页。</Text></Section><Section header={<Text>预计到站</Text>}><Text>分钟数依据上报车速和完整站距估算，信息不足时显示待更新。地图连线是站点示意，不代表精确道路轨迹；站点上报的位置不会标为车辆 GPS。</Text></Section></List>}
+function SettingsPage({changed,close,active}:{changed:()=>void;close:any;active:boolean}){
  const [runtime,setRuntime]=useState(widgetRuntime())
+ useEffect(()=>{if(active)setRuntime(widgetRuntime())},[active])
  function update(patch:Partial<WidgetRuntime>){setRuntime(saveWidgetRuntime(patch));changed();Widget.reloadAll()}
  return <List navigationTitle="设置" toolbar={{cancellationAction:close}}>
- <Section header={<Text>组件运行</Text>} footer={<Text>{runtime.mode==='manual'?'平时休眠，点击组件刷新一次。':runtime.mode==='commute'?'通勤更新：07:00–09:00、17:00–19:30，其他时间休眠。':'按系统允许的频率更新。'}</Text>}><Toggle title="启用桌面组件" value={runtime.enabled} onChanged={v=>update({enabled:v})}/><Picker title="刷新策略" value={runtime.mode} onChanged={v=>update({mode:v as WidgetRuntime['mode']})} pickerStyle="segmented"><Text tag="manual">手动</Text><Text tag="commute">通勤</Text><Text tag="always">持续</Text></Picker></Section>
+ <Section header={<Text>组件运行</Text>} footer={<Text>{runtime.mode==='manual'?'打开实时公交时同步更新组件。':runtime.mode==='commute'?'通勤更新：07:00–09:00、17:00–19:30。':'前台15秒轮询；桌面向 iOS 请求15秒刷新，实际频率由系统决定。'}</Text>}><Toggle title="启用桌面组件" value={runtime.enabled} onChanged={v=>update({enabled:v})}/><Picker title="刷新策略" value={runtime.mode} onChanged={v=>update({mode:v as WidgetRuntime['mode']})} pickerStyle="segmented"><Text tag="manual">随前台</Text><Text tag="commute">通勤</Text><Text tag="always">自动</Text></Picker></Section>
  <Section><NavigationLink destination={<NearbySettings changed={changed}/>}><Text>站台与定位</Text></NavigationLink><NavigationLink destination={<LoginHelp changed={changed}/>}><Text>登录与抓取</Text></NavigationLink></Section>
  <Section><NavigationLink destination={<Guide/>}><Text>使用说明</Text></NavigationLink></Section>
- <Section header={<Text>武胜公交 · 0.3.0</Text>}><Button title="更新脚本" action={async()=>{await Safari.openURL(Script.createImportScriptsURLScheme(['https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus.scripting']))}}/></Section>
+ <Section header={<Text>武胜公交 · {APP_VERSION}</Text>}><Button title="更新脚本" action={async()=>{await Safari.openURL(Script.createImportScriptsURLScheme(['https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus.scripting']))}}/></Section>
  </List>
 }
 function StylesPage({close}:{close:any}){
@@ -66,19 +70,20 @@ function StylesPage({close}:{close:any}){
  return <List navigationTitle="组件样式" toolbar={{cancellationAction:close}}>
  <Section header={<Text>布局</Text>}><Picker title="组件尺寸" value={family} onChanged={v=>setFamily(v as BusFamily)} pickerStyle="segmented"><Text tag="systemSmall">小</Text><Text tag="systemMedium">中</Text><Text tag="systemLarge">大</Text></Picker><Picker title="组件样式" value={look.styles[family]} onChanged={v=>{setLook(saveStyle(family,v as BusStyle));Widget.reloadAll()}} pickerStyle="menu">{BUS_STYLES.map(s=><Text key={s} tag={s}>{s}</Text>)}</Picker></Section>
  <Section header={<Text>外观</Text>}><Picker title="组件主题" value={look.theme} onChanged={v=>update({theme:v as Appearance['theme']})} pickerStyle="segmented"><Text tag="night">深色</Text><Text tag="day">浅色</Text><Text tag="system">跟随系统</Text></Picker><Toggle title="显示公交卡余额" value={look.showBalance} onChanged={v=>update({showBalance:v})}/><Toggle title="紧凑布局" value={look.compact} onChanged={v=>update({compact:v})}/></Section>
- <Section header={<Text>预览</Text>} footer={<Text>各尺寸分别保存样式，桌面可定位、换向和翻页。</Text>}><VStack frame={{width:family==='systemSmall'?158:300,height:family==='systemLarge'?330:158}}>{isNearby()?<NearbyView snapshot={cachedNearby()} family={family} card={card}/>:<BusView snapshot={Storage.get<BusSnapshot>('wusheng.bus.arrival')||undefined} family={family} card={card}/>}</VStack></Section>
+ <Section header={<Text>预览</Text>} footer={<Text>各尺寸分别保存样式，桌面点线路查看详情，定位自动更新。</Text>}><VStack frame={{width:family==='systemSmall'?158:300,height:family==='systemLarge'?330:158}}>{isNearby()?<NearbyView snapshot={cachedNearby()} family={family} card={card}/>:<BusView snapshot={Storage.get<BusSnapshot>('wusheng.bus.arrival')||undefined} family={family} card={card}/>}</VStack></Section>
  </List>
 }
-export function BusApp({openRide=false}:{openRide?:boolean}){
- const dismiss=Navigation.useDismiss(),selection=useObservable<number>(openRide?0:1),[active,setActive]=useState(openRide?0:1),[rideTap,setRideTap]=useState(openRide?1:0),[,setRevision]=useState(0)
+export function BusApp({openRide=false,openRoute,chooseLine=false}:{openRide?:boolean;openRoute?:RouteRequest;chooseLine?:boolean}){
+ const dismiss=Navigation.useDismiss(),selection=useObservable<number>(openRide?1:0),[active,setActive]=useState(openRide?1:0),[rideTap,setRideTap]=useState(openRide?1:0),[,setRevision]=useState(0)
  const changed=()=>setRevision(n=>n+1),close=<Button title="关闭" action={dismiss}/>
- useEffect(()=>{let previous=selection.value;const listener=()=>{const next=selection.value;if(next===previous)return;previous=next;setActive(next);if(next===0)setRideTap(n=>n+1)};selection.subscribe(listener);return()=>selection.unsubscribe(listener)},[])
+ useEffect(()=>{let previous=selection.value;const listener=()=>{const next=selection.value;if(next===previous)return;previous=next;setActive(next);if(next===1)setRideTap(n=>n+1)};selection.subscribe(listener);return()=>selection.unsubscribe(listener)},[])
  return <TabView selection={selection}>
- <Tab title="乘车码" systemImage="qrcode" value={0}><NavigationStack><RidePage active={active===0} tapId={rideTap} close={close} toAccount={()=>selection.setValue(1)}/></NavigationStack></Tab>
- <Tab title="账号" systemImage="person.crop.circle.fill" value={1}><NavigationStack><AccountsPage active={active===1} changed={changed} close={close}/></NavigationStack></Tab>
- <Tab title="设置" systemImage="gearshape.fill" value={2}><NavigationStack><SettingsPage changed={changed} close={close}/></NavigationStack></Tab>
- <Tab title="组件样式" systemImage="square.grid.2x2.fill" value={3}><NavigationStack><StylesPage close={close}/></NavigationStack></Tab>
+ <Tab title="实时公交" systemImage="bus.fill" value={0}><NavigationStack><RealtimePage active={active===0} close={close} initialRoute={openRoute} chooseLine={chooseLine}/></NavigationStack></Tab>
+ <Tab title="乘车码" systemImage="qrcode" value={1}><NavigationStack><RidePage active={active===1} tapId={rideTap} close={close} toAccount={()=>selection.setValue(2)}/></NavigationStack></Tab>
+ <Tab title="账号" systemImage="person.crop.circle.fill" value={2}><NavigationStack><AccountsPage active={active===2} changed={changed} close={close}/></NavigationStack></Tab>
+ <Tab title="设置" systemImage="gearshape.fill" value={3}><NavigationStack><SettingsPage active={active===3} changed={changed} close={close}/></NavigationStack></Tab>
+ <Tab title="组件样式" systemImage="square.grid.2x2.fill" value={4}><NavigationStack><StylesPage close={close}/></NavigationStack></Tab>
  </TabView>
 }
-async function main(){await Navigation.present({element:<BusApp openRide={Script.queryParameters?.page==='ride'}/>,modalPresentationStyle:'fullScreen',swipeBackBehavior:'dismiss'});Script.exit()}
+async function main(){await Navigation.present({element:<BusApp openRide={Script.queryParameters?.page==='ride'} openRoute={parseRouteRequest(Script.queryParameters)} chooseLine={Script.queryParameters?.select==='1'}/>,modalPresentationStyle:'fullScreen',swipeBackBehavior:'dismiss'});Script.exit()}
 main()
