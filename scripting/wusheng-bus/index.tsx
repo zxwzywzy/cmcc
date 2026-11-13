@@ -1,7 +1,7 @@
 import { Button,List,Navigation,NavigationLink,NavigationStack,Picker,Script,Section,Tab,TabView,Text,TextField,Toggle,VStack,Widget,useEffect,useObservable,useState } from 'scripting'
 import { balance,choice,current,loadLines,loadStations,saveChoice,type BusSnapshot } from './api'
 import { forgetAccount,readAccount } from './account'
-import { loginFromBoxJS,captureStatus,boxHost,captureInstallURL,LOGIN_SUBSCRIPTION,BOXJS_SUBSCRIPTION } from './login'
+import { loginFromBoxJS,captureStatus,boxHost,captureInstallURL,LOGIN_SUBSCRIPTION } from './login'
 import { BusView,clock,arrivalLabel } from './view'
 import type { Line,Station } from './model'
 import { isNearby,setMode,nearbyCurrent,cachedNearby,clearNearby,meters,destination,vehicleSummary,type NearbySnapshot } from './nearby'
@@ -17,14 +17,15 @@ function AccountsPage({changed,active,close}:{changed:()=>void;active:boolean;cl
  async function diagnose(){if(busy)return;setBusy(true);setNote('正在检查 BoxJS 抓取记录…');try{setNote(await captureStatus(host))}catch(e){setNote((e as Error).message)}finally{setBusy(false)}}
  async function refreshBalance(){if(busy)return;const account=readAccount();setBusy(true);try{const result=await balance(account);if(account?.authorization===readAccount()?.authorization&&account?.userId===readAccount()?.userId){setCard(result);setNote('余额已更新');Widget.reloadAll()}}catch(e){setNote((e as Error).message)}finally{setBusy(false)}}
  return <List navigationTitle="账号" toolbar={{cancellationAction:close}}>
- <Section header={<Text>BoxJS 登录</Text>} footer={<Text>圈 X 先把登录凭据保存在本机，BoxJS 读取这份记录，再由这里验证并保存登录。无需文件。</Text>}>
- <Button title={busy?'正在处理…':'从 BoxJS 导入登录'} disabled={busy} action={connect}/>
+ <Section header={<Text>添加与更新</Text>} footer={<Text>和运营商组件共用现有 BoxJS。圈 X 抓取后，直接点击导入，不用另外添加 BoxJS 应用订阅。</Text>}>
+ <Button title={busy?'正在处理…':'从 BoxJS 导入'} disabled={busy} action={connect}/>
  <Button title="检查抓取状态" disabled={busy} action={diagnose}/>
+ <TextField title="BoxJS 域名" value={host} onChanged={setHost}/>
  {note?<Text>{note}</Text>:null}
  </Section>
  <Section header={<Text>当前账号</Text>}><Text>{readAccount()?'已登录':'尚未登录'}</Text><Text>{readAccount()&&card?.balance!==undefined?'余额 ¥'+card.balance.toFixed(2):'余额未获取'}</Text>{readAccount()&&card?<Text>{(card.cardTail?'公交卡尾号 '+card.cardTail+' · ':'')+'更新于 '+clock(card.fetchedAt)}</Text>:null}<Button title="刷新余额" disabled={busy||!readAccount()} action={refreshBalance}/>{readAccount()?<Button title="退出本机登录" disabled={busy} action={()=>{forgetAccount();setCard(undefined);setNote('已退出本机登录，BoxJS 抓取记录仍保留');changed();Widget.reloadAll()}}/>:null}</Section>
  <Section header={<Text>首次抓取</Text>} footer={<Text>沿用运营商组件已配置的 BoxJS、圈 X 重写和 MITM。重新打开微信“武胜公交”，点击乘车码或消费记录；回本页导入。没有通知也可检查状态。</Text>}><Button title="添加圈 X 抓取订阅" action={async()=>{try{await Safari.openURL(captureInstallURL())}catch{setNote('请复制订阅链接添加到圈 X 重写资源')}}}/><Button title="打开微信" action={async()=>{await Safari.openURL('weixin://')}}/><Button title="复制抓取订阅链接" action={async()=>{await Pasteboard.setString(LOGIN_SUBSCRIPTION);setNote('抓取订阅链接已复制')}}/></Section>
- <Section header={<Text>BoxJS 连接</Text>} footer={<Text>默认 boxjs.com，运营商组件使用 boxjs.net 时填同一个域名。要在 BoxJS 中看到“武胜公交登录”应用，可到设置页复制 BoxJS 应用订阅添加。</Text>}><TextField title="BoxJS 域名" value={host} onChanged={setHost}/><Button title="打开 BoxJS" action={async()=>{if(!/^(boxjs\.com|boxjs\.net)$/.test(host.trim())){setNote('请填写 boxjs.com 或 boxjs.net');return}await Safari.openURL('https://'+host.trim())}}/></Section>
+ <Section><Text>BoxJS 域名与运营商组件保持一致，默认 boxjs.com，也支持 boxjs.net。抓取成功后不需要打开 BoxJS 页面，直接在本页导入即可。</Text></Section>
  </List>
 }
 function Stations({line,changed}:{line:Line;changed:()=>void}){
@@ -46,14 +47,13 @@ function NearbySettings({changed}:{changed:()=>void}){
  {isNearby()?<><Text>{near?.stop?near.stop.name+' · 距你 '+meters(near.stop.meters):near?.message||'点击下方按钮查找最近站台'}</Text>{near?.services.slice(0,3).map((s,i)=><Text key={i}>{s.choice.line.name+' · '+destination(s.choice)+' · '+vehicleSummary(s,!!near.stale)}</Text>)}{near?.stop?<NavigationLink destination={<LiveNearbyMap initial={near}/>}><Text>全部线路与地图</Text></NavigationLink>:null}</>:<><Text>{c?c.line.name+' · '+c.station.name:'尚未选择候车站'}</Text><Text>{snapshot?.message||arrivalLabel(snapshot?.items[0])}</Text></>}
  <Button title={busy?'正在查询…':'用当前位置查最近站台'} disabled={busy} action={()=>refresh(true)}/><Button title="刷新到站" disabled={busy} action={()=>refresh()}/>{note?<Text>{note}</Text>:null}<NavigationLink destination={<Lines changed={changed}/>}><Text>选择固定线路、方向和站点</Text></NavigationLink></Section></List>
 }
-function Guide(){return <List navigationTitle="使用说明"><Section header={<Text>登录与乘车码</Text>}><Text>圈 X 抓取授权 → BoxJS 本机记录 → 账号页“从 BoxJS 导入登录”。登录失效时重新抓取即可。</Text><Text>打开脚本默认进入账号页，不取乘车码；点击底部“乘车码”或取码页刷新按钮时才获取。离开乘车码页会隐藏图片。</Text></Section><Section header={<Text>桌面组件</Text>}><Text>长按桌面添加 Scripting 组件，选择“武胜公交”，参数留空。组件样式页可切换小、中、大预览，外观设置应用到各尺寸。</Text><Text>叠放：多个同尺寸组件参数分别填“叠放1”“叠放2”等，再手动拖到一起；每层页码和方向独立。</Text></Section><Section header={<Text>定位与实时公交</Text>}><Text>设置 → 站台与定位，可查询最近站台或选择固定线路。到站查询不需要登录；桌面刷新由 iOS 安排。</Text><Text>地图蓝色是自己、绿色是站台、橙色是车辆；标为站点位置的图钉不是车辆精确 GPS。距离区分直线距离与站距估算。</Text></Section></List>}
+function Guide(){return <List navigationTitle="使用说明"><Section header={<Text>登录与乘车码</Text>}><Text>和运营商组件一样：圈 X 更新抓取重写 → 微信里抓取授权 → 回账号页点“从 BoxJS 导入”。共用现有 BoxJS，不需要额外的应用订阅或文件。</Text><Text>打开脚本默认进入账号页，不取乘车码；点击底部“乘车码”或取码页刷新按钮时才获取。离开乘车码页会隐藏图片。</Text></Section><Section header={<Text>桌面组件</Text>}><Text>长按桌面添加 Scripting 组件，选择“武胜公交”，参数留空。组件样式页可切换小、中、大预览，外观设置应用到各尺寸。</Text><Text>叠放：多个同尺寸组件参数分别填“叠放1”“叠放2”等，再手动拖到一起；每层页码和方向独立。</Text></Section><Section header={<Text>定位与实时公交</Text>}><Text>设置 → 站台与定位，可查询最近站台或选择固定线路。到站查询不需要登录；桌面刷新由 iOS 安排。</Text><Text>地图蓝色是自己、绿色是站台、橙色是车辆；标为站点位置的图钉不是车辆精确 GPS。距离区分直线距离与站距估算。</Text></Section></List>}
 function SettingsPage({changed,close}:{changed:()=>void;close:any}){
  const [note,setNote]=useState('')
  return <List navigationTitle="设置" toolbar={{cancellationAction:close}}>
  <Section header={<Text>公交查询</Text>}><NavigationLink destination={<NearbySettings changed={changed}/>}><Text>站台与定位</Text></NavigationLink><Button title="清除本机定位缓存" action={()=>{clearNearby();setNote('已清除定位缓存，请进入站台与定位重新查询');changed();Widget.reloadAll()}}/>{note?<Text>{note}</Text>:null}</Section>
- <Section header={<Text>BoxJS 应用</Text>} footer={<Text>抓取凭据已保存在圈 X 本机，BoxJS 直接读取。此应用订阅用于在 BoxJS 列表显示“武胜公交登录”，不是上传账号的服务器。</Text>}><Button title="复制 BoxJS 应用订阅" action={async()=>{await Pasteboard.setString(BOXJS_SUBSCRIPTION);setNote('已复制，可在 BoxJS 的应用订阅中添加')}}/></Section>
  <Section><NavigationLink destination={<Guide/>}><Text>使用说明</Text></NavigationLink></Section>
- <Section header={<Text>脚本更新 · 0.2.7</Text>}><Button title="更新脚本" action={async()=>{await Safari.openURL(Script.createImportScriptsURLScheme(['https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus.scripting']))}}/><Text>更新覆盖同名“武胜公交”后重新运行。0.2.7 的底部栏依次为乘车码、账号、设置、组件样式。</Text></Section>
+ <Section header={<Text>脚本更新 · 0.2.8</Text>}><Button title="更新脚本" action={async()=>{await Safari.openURL(Script.createImportScriptsURLScheme(['https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus.scripting']))}}/><Text>更新覆盖同名“武胜公交”后重新运行。沿用运营商组件的 BoxJS 直接导入流程，保留底部四页。</Text></Section>
  </List>
 }
 function StylesPage({close}:{close:any}){

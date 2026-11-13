@@ -2,7 +2,6 @@ import { fetch } from 'scripting'
 import { readAccount,saveAccount,type Account } from './account'
 import { balance } from './api'
 export const LOGIN_SUBSCRIPTION='https://raw.githubusercontent.com/zxwzywzy/cmcc/main/Wusheng-Bus-Login.conf?v=0.2.7'
-export const BOXJS_SUBSCRIPTION='https://raw.githubusercontent.com/zxwzywzy/cmcc/main/Wusheng-Bus.boxjs.json'
 const BOX_KEY='wusheng_bus_login_v1',DIAG_KEY='wusheng_bus_login_diag_v1',HOST_KEY='wusheng.bus.boxjs.host'
 export function boxHost(){return Storage.get<string>(HOST_KEY)||'boxjs.com'}
 export function captureInstallURL(){return 'quantumult-x:///add-resource?remote-resource='+encodeURIComponent(JSON.stringify({rewrite_remote:[LOGIN_SUBSCRIPTION+', tag=武胜公交登录授权, enabled=true']}))}
@@ -30,7 +29,7 @@ async function boxValue(host:string,key:string){
 }
 export async function captureStatus(host=boxHost()){
  const [record,diagnostic]=await Promise.allSettled([boxValue(host,BOX_KEY),boxValue(host,DIAG_KEY)])
- if(record.status==='fulfilled'&&record.value){try{capturedAccount(record.value);return 'BoxJS 已读到完整授权，可在账号页点击“从 BoxJS 导入登录”验证。'}catch{}}
+ if(record.status==='fulfilled'&&record.value){try{capturedAccount(record.value);return 'BoxJS 已读到完整授权，直接点击账号页的“从 BoxJS 导入”即可。'}catch{}}
  if(diagnostic.status==='fulfilled'&&diagnostic.value){
   try{
    const d=JSON.parse(diagnostic.value),messages:Record<string,string>={captured:'已命中过请求，但授权记录不完整，请重开微信乘车码页面再试。','missing-auth':'已命中公交请求，但没有登录 Token；请先在微信武胜公交完成正常登录。','missing-user':'已命中公交请求，但没有用户标识；请重新进入微信乘车码或消费记录页面。','invalid-body':'已命中请求，字段暂未识别，请更新抓取订阅后重试。','login-unready':'已命中登录响应，但授权尚未完整，请在微信完成登录。','save-failed':'已命中完整授权，但圈 X 保存失败，请检查圈 X 的本地存储。'}

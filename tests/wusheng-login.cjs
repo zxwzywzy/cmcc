@@ -48,6 +48,6 @@ function fixture(){
  const ready=fixture();assert.match(await ready.login.captureStatus(),/BoxJS 已读到完整授权/);assert.equal(ready.calls.filter(r=>r.type==='verify').length,0);assert.equal(Object.keys(ready.keys).length,0);
  const noHit=fixture();noHit.setReply({});assert.match(await noHit.login.captureStatus(),/尚未命中业务请求/);
  const hit=fixture();hit.setReply({val:JSON.stringify({state:'missing-auth',version:'0.2.6'})});assert.match(await hit.login.captureStatus(),/已命中.*没有登录 Token/);
- const index=fs.readFileSync('scripting/wusheng-bus/index.tsx','utf8');assert.doesNotMatch(index,/DocumentPicker|SecureField|decodeAccount|readAsString|ImportAccount/);assert.match(index,/从 BoxJS 导入登录/);assert.match(index,/检查抓取状态/);
+ const index=fs.readFileSync('scripting/wusheng-bus/index.tsx','utf8');assert.doesNotMatch(index,/DocumentPicker|SecureField|decodeAccount|readAsString|ImportAccount|BOXJS_SUBSCRIPTION|复制 BoxJS 应用订阅/);assert.match(index,/从 BoxJS 导入/);assert.match(index,/检查抓取状态/);
  console.log('PASS scoped QX profile/ride-request/login-response capture, SNI hostname without port, exact long user IDs, no phone grants or QR responses retained, throttled safe diagnostics, BoxJS verification before saving and capture-state UI.');
 })().catch(e=>{console.error(e);process.exitCode=1});
