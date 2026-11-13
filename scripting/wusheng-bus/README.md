@@ -1,17 +1,29 @@
-# 武胜公交 · Scripting 0.2.5 试用版
+# 武胜公交 · Scripting 0.2.6 试用版
 
-[下载 .scripting 安装包](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus-0.2.5.scripting) · [ZIP 备用包](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus-0.2.5.zip) · [圈 X 登录抓取订阅](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/Wusheng-Bus-Login.conf)
+[下载 .scripting 安装包](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus-0.2.6.scripting) · [ZIP 备用包](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus-0.2.6.zip) · [圈 X 登录抓取订阅](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/Wusheng-Bus-Login.conf?v=0.2.6)
+
+## 0.2.6：修正没有抓取通知的问题
+
+旧订阅把 MITM 主机名写成 `wsapi.wskyzx.com:26110`，现改为 TLS SNI 主机名 `wsapi.wskyzx.com`；请求规则仍严格限制业务端口26110。该配置可能使设备未命中重写，但没有读取用户手机网络日志，不能据此断言是唯一原因。依据：[圈 X 官方 sample.conf 的 MITM 说明](https://github.com/crossutility/Quantumult-X/blob/master/sample.conf)。
+
+抓取入口扩展为资料查询、乘车码和消费记录的请求，以及正式 `GetPhoneNumber` 登录的成功响应。只提取 Token 和 userId，不读取手机号授权请求正文，不抓取乘车码响应图片，不新增任何业务请求。只有用户自己在微信点击乘车码时才会触发该微信请求，Scripting 仍保持点击取码。
+
+没有通知时先更新抓取订阅，在圈 X 的 MITM 主机名中确认存在 `wsapi.wskyzx.com`（无端口），确保重写、MITM 与已信任的证书生效。退出小程序并关闭微信后台，重新打开后点击“乘车码”或“消费记录”；这些入口比停留在缓存资料页更容易确认是否产生请求。已有完整授权时也可直接导入，不必等待通知。
+
+新版登录页增加“检查抓取状态”：只读取圈 X 本地授权是否齐全和无敏感值的诊断状态。区分尚未命中、没有 Token、缺 userId、字段不识别、保存失败以及已有完整授权；状态检查不会验证登录、改账号或取乘车码。相同通知一分钟内抑制，首次成功仍及时提示。
+
+抓取订阅与0.2.5组件兼容；新增状态检查需更新0.2.6。自动检查覆盖上述入口、登录响应ID精度、忽略乘车码响应、最小诊断记录和通知节流。实际 iPhone MITM、重写和微信通知仍需设备确认。
 
 ## 0.2.5：像运营商组件一样抓取登录
 
 首页公交卡或“更多 → 账号管理”进入“圈 X 抓取登录”，无需账号文件、导入口令或手填 Token：
 
 1. 沿用运营商组件已经配置好的 BoxJS、圈 X 重写与 MITM。在登录页点击“添加圈 X 抓取订阅”，确认添加并启用。本订阅只添加自己的资源，不替换已有配置；也可复制链接到圈 X 的重写资源中添加。
-2. 打开微信“武胜公交”，如果未登录先正常完成微信手机号授权；进入“我的”页刷新个人信息。
-3. 收到“授权已抓取”通知后回 Scripting，点击“从圈 X 导入登录”。默认 BoxJS 域名 boxjs.com，运营商组件使用 boxjs.net 时也可改为该域名。
+2. 重新打开微信“武胜公交”，如果未登录先正常完成微信手机号授权；点击乘车码或消费记录页面。
+3. 收到“授权已抓取”通知后回 Scripting，点击“从圈 X 导入登录”。没有通知也可点“检查抓取状态”或直接尝试导入。默认 BoxJS 域名 boxjs.com，运营商组件使用 boxjs.net 时也可改为该域名。
 4. 脚本验证授权并获取余额，成功后保存本机 Keychain。关闭本抓取订阅即可正常查余额、点击取码；授权过期后重新抓取，不需要反复抓取乘车码。
 
-实际抓取内容是请求头中的 `Authorization: Bearer …` 与请求正文的 `userId`，不是微信临时 code 或手机号授权的加密正文。仅拦截 `wsapi.wskyzx.com:26110/api/WechatInfo/GetUserInfo` 的请求，圈 X 本地键为 `wusheng_bus_login_v1`；不保存完整请求、资料响应或二维码，不上传账户到 GitHub。
+实际抓取内容是查询请求头中的 `Authorization: Bearer …` 与请求正文的 `userId`，或成功登录响应中的 token/userId，不是微信临时 code 或手机号授权的加密正文。只匹配本版本列出的特定业务路径，圈 X 本地授权键为 `wusheng_bus_login_v1`，诊断键 `wusheng_bus_login_diag_v1` 只记录版本、固定状态与时间；不保存完整请求、资料响应或二维码，不上传账户到 GitHub。
 
 验证失败、记录缺失或连接失败不会删除旧登录。原有 Keychain 登录继续有效，旧文件不再作为界面入口。原有 BoxJS 服务不通时需先修复其重写，此脚本不会自动安装证书或改系统代理。
 
@@ -59,7 +71,7 @@
 2. 点击“用当前位置查最近站台”，允许定位并开启精确位置。默认桌面展示最近站台、直线距离、各线路到站站数、车辆上报的所在站。
 3. 长按桌面添加 Scripting 组件并选择“武胜公交”，参数留空，支持小中大尺寸。点击“刷新”请求更新；iOS 决定实际刷新时间，不是连续实时地图。
 4. 打开脚本的“全部线路与地图”可查看自己的位置、最近站台和车辆。页面打开期间约十秒更新，离开停止；未提供车辆时不绘制虚构图钉。
-5. 查余额或取乘车码前，在首页“圈 X 抓取登录”添加订阅，微信武胜公交“我的”页刷新，再回 Scripting 点“从圈 X 导入登录”。无需文件，个人账号不在公开安装包里。
+5. 查余额或取乘车码前，在首页“圈 X 抓取登录”添加订阅，重新进入微信武胜公交的乘车码或消费记录页面，再回 Scripting 点“从圈 X 导入登录”。无需文件，个人账号不在公开安装包里。
 6. 点击首页或组件“乘车码”，前台请求本次新码及余额；页内也可点击“获取 / 刷新乘车码”。只有这些点击会触发取码，不持续请求。取码失败可回微信使用。
 
 更新前已装 0.1.0 的，请在 Scripting 中导入新版并确认覆盖同名“武胜公交”。当前名称与 0.0.x 的“接口准备”不同，旧准备工具可移除。

@@ -1,7 +1,7 @@
 import { Button, List, Navigation, NavigationLink, Script, Section, Text, TextField, Widget, useEffect, useState } from 'scripting'
 import { balance, choice, current, loadLines, loadStations, saveChoice, type BusSnapshot } from './api'
 import { forgetAccount, readAccount } from './account'
-import { loginFromBoxJS,boxHost,captureInstallURL,LOGIN_SUBSCRIPTION } from './login'
+import { loginFromBoxJS,captureStatus,boxHost,captureInstallURL,LOGIN_SUBSCRIPTION } from './login'
 import { clock, arrivalLabel } from './view'
 import type { Line, Station } from './model'
 import {isNearby,setMode,nearbyCurrent,cachedNearby,clearNearby,meters,destination,vehicleSummary,type NearbySnapshot} from './nearby'
@@ -11,12 +11,14 @@ import {RidePage,presentRide} from './ride-page'
 function LoginAccount({changed}:{changed:()=>void}){
  const [host,setHost]=useState(boxHost()),[note,setNote]=useState(''),[busy,setBusy]=useState(false)
  async function connect(){if(busy)return;setBusy(true);setNote('正在读取圈 X 抓取的授权并验证…');try{const card=await loginFromBoxJS(host);setNote('登录成功'+(card.balance!==undefined?' · 余额 ¥'+card.balance.toFixed(2):'')+'。可以关闭抓取订阅了。');Widget.reloadAll();changed()}catch(e){setNote((e as Error).message)}finally{setBusy(false)}}
+ async function diagnose(){if(busy)return;setBusy(true);setNote('正在检查圈 X 抓取状态…');try{setNote(await captureStatus(host))}catch(e){setNote((e as Error).message)}finally{setBusy(false)}}
  return <List navigationTitle="圈 X 抓取登录">
  <Section header={<Text>和运营商组件一样登录</Text>} footer={<Text>沿用你已配置的 BoxJS、圈 X 重写与 MITM。先在微信小程序正常登录，再抓取当前授权；不需要账号文件或手填 Token。</Text>}>
  <Button title="1. 添加圈 X 抓取订阅" action={async()=>{try{await Safari.openURL(captureInstallURL())}catch{setNote('未能打开圈 X，请复制下面的订阅链接添加到重写资源。')}}}/>
  <Button title="2. 打开微信" action={async()=>{await Safari.openURL('weixin://')}}/>
- <Text>进入微信“武胜公交”→“我的”，刷新个人信息。出现“授权已抓取”通知后，回这里点击下一步。</Text>
+ <Text>重新进入微信“武胜公交”，点击乘车码或消费记录；未登录时先正常登录。出现通知后回这里导入，没有通知也可直接尝试导入或检查状态。</Text>
  <Button title={busy?'正在验证…':'3. 从圈 X 导入登录'} disabled={busy} action={connect}/>
+ <Button title="检查抓取状态" disabled={busy} action={diagnose}/>
  {note?<Text>{note}</Text>:null}
  </Section>
  <Section header={<Text>连接设置</Text>} footer={<Text>默认 boxjs.com；如果运营商组件使用 boxjs.net，这里也填写 boxjs.net。登录成功后只保存在本机钥匙串，过期时重新抓取即可。</Text>}><TextField title="BoxJS 域名" value={host} onChanged={setHost}/><Button title="复制抓取订阅链接" action={async()=>{await Pasteboard.setString(LOGIN_SUBSCRIPTION);setNote('已复制订阅链接，可在圈 X 重写资源中添加。')}}/></Section>
@@ -48,7 +50,7 @@ function More({changed}:{changed:()=>void}){
  <Section header={<Text>账号管理</Text>}><NavigationLink destination={<LoginAccount changed={()=>{setAccountRevision(n=>n+1);changed()}}/>}><Text>{hasAccount?'更新微信登录授权':'圈 X 抓取登录'}</Text></NavigationLink>{hasAccount?<Button title="移除本机账号" action={()=>{forgetAccount();setAccountRevision(n=>n+1);changed();Widget.reloadAll()}}/>:null}</Section>
  <Section header={<Text>定位数据</Text>} footer={<Text>清除后附近站台需要重新允许定位并查询；固定站台选择不会被删除。</Text>}><Button title="清除本机定位缓存" action={()=>{clearNearby();changed();Widget.reloadAll()}}/></Section>
  <Section><NavigationLink destination={<Guide/>}><Text>使用说明与桌面组件</Text></NavigationLink></Section>
- <Section header={<Text>脚本更新 · 0.2.5</Text>} footer={<Text>更新后重新运行脚本并刷新桌面组件。</Text>}><Button title="更新脚本" action={async()=>{await Safari.openURL(Script.createImportScriptsURLScheme(['https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus.scripting']))}}/></Section>
+ <Section header={<Text>脚本更新 · 0.2.6</Text>} footer={<Text>更新后重新运行脚本并刷新桌面组件。</Text>}><Button title="更新脚本" action={async()=>{await Safari.openURL(Script.createImportScriptsURLScheme(['https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus.scripting']))}}/></Section>
  </List>
 }
 function Home(){
