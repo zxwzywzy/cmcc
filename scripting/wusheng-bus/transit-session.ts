@@ -15,13 +15,31 @@ export function createTransitSession(updated:(state:TransitState)=>void=()=>{}){
   clear();inFlight=true;pending=false;const current=epoch,start=Date.now(),request=wanted
   emit({...state,loading:true,message:''})
   try{
-   const snapshot=await nearbyCurrent({enable:true,force:true})
-   if(current!==epoch||!ready())return
-   let detail:RouteDetail|undefined,routeError=''
-   if(request){try{detail=await loadRouteDetail(request,snapshot);if(detail?.stale)routeError=detail.message||'车辆位置未更新'}catch(e){routeError=(e as Error).message;if(state.detail&&state.detail.request.lineId===request.lineId&&state.detail.direction===request.direction)detail={...state.detail,stale:true,message:routeError}}}
-   if(current!==epoch||!ready())return
-   emit({snapshot,detail,loading:false,message:routeError||(snapshot?.stale?snapshot.message||'暂未更新':'')})
-   if(snapshot&&!snapshot.stale||detail&&!detail.stale)updated({...state})
+   const initial=state.snapshot,valid=()=>current===epoch&&ready()
+   let nearError='',routeError='',snapshot:NearbySnapshot|undefined,detail:RouteDetail|undefined
+   const nearWork=nearbyCurrent({enable:true}).then(value=>{
+    snapshot=value;if(!valid())return
+    emit({...state,snapshot:value,message:routeError||value?.message||''})
+    if(value&&!value.stale)updated({...state})
+   }).catch(e=>{nearError=(e as Error).message;if(valid())emit({...state,snapshot:state.snapshot?{...state.snapshot,stale:true}:undefined,message:routeError||nearError})})
+   const routeWork=request?loadRouteDetail(request,initial).then(value=>{
+    detail=value;if(!valid())return
+    routeError=value.stale?value.message||'车辆位置未更新':''
+    emit({...state,detail:value,message:routeError||nearError||state.snapshot?.message||''})
+    if(!value.stale)updated({...state})
+   }).catch(e=>{routeError=(e as Error).message;if(valid())emit({...state,detail:state.detail?{...state.detail,stale:true,message:routeError}:undefined,message:routeError})}):Promise.resolve()
+   await Promise.all([nearWork,routeWork])
+   if(!valid())return
+   if(request&&detail&&!detail.stop&&snapshot?.position&&!request.stationId&&request.stationNo===undefined){
+    try{
+     detail=await loadRouteDetail(request,snapshot)
+     if(!valid())return
+     routeError=detail.stale?detail.message||'车辆位置未更新':''
+     emit({...state,detail,message:routeError||nearError||snapshot.message||''})
+     if(!detail.stale)updated({...state})
+    }catch(e){if(valid())routeError=(e as Error).message}
+   }
+   emit({...state,loading:false,message:routeError||nearError||state.snapshot?.message||''})
   }catch(e){if(current===epoch&&ready())emit({...state,snapshot:state.snapshot?{...state.snapshot,stale:true}:undefined,detail:state.detail?{...state.detail,stale:true}:undefined,loading:false,message:(e as Error).message})}
   finally{inFlight=false;if(ready())schedule(pending||current!==epoch?0:Math.max(0,LIVE_INTERVAL-(Date.now()-start)))}
  }

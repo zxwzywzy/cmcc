@@ -1,11 +1,12 @@
 export type WidgetRuntime={enabled:boolean;mode:'manual'|'commute'|'always'}
-const KEY='wusheng.bus.widget.runtime.v2'
+const KEY='wusheng.bus.widget.runtime.v3'
+const PREVIOUS='wusheng.bus.widget.runtime.v2'
 const LEGACY='wusheng.bus.widget.runtime.v1'
 const LOCAL_UNTIL='wusheng.bus.widget.localUntil.v1'
 const validMode=(mode:unknown):mode is WidgetRuntime['mode']=>mode==='manual'||mode==='commute'||mode==='always'
 
 export function widgetRuntime():WidgetRuntime{
- const saved=Storage.get<Partial<WidgetRuntime>>(KEY),legacy=Storage.get<Partial<WidgetRuntime>>(LEGACY)
+ const saved=Storage.get<Partial<WidgetRuntime>>(KEY),legacy=Storage.get<Partial<WidgetRuntime>>(PREVIOUS)||Storage.get<Partial<WidgetRuntime>>(LEGACY)
  if(saved)return {enabled:saved.enabled!==false,mode:validMode(saved.mode)?saved.mode:'always'}
  return {enabled:legacy?.enabled!==false,mode:legacy?.mode==='commute'?'commute':'always'}
 }
@@ -23,8 +24,8 @@ export function widgetAwake(settings=widgetRuntime(),now=new Date()):boolean{
 }
 // reloadAll may render several widget sizes/stack slots. Keep all of those renders
 // local after an intent, rather than consuming a one-widget refresh token.
-export function noteWidgetInteraction(){Storage.set(LOCAL_UNTIL,Date.now()+30000)}
-export function widgetReloadIsLocal(){const until=Storage.get<number>(LOCAL_UNTIL);return typeof until==='number'&&until>Date.now()&&until<=Date.now()+30000}
+export function noteWidgetInteraction(){Storage.set(LOCAL_UNTIL,Date.now()+5000)}
+export function widgetReloadIsLocal(){const until=Storage.get<number>(LOCAL_UNTIL);return typeof until==='number'&&until>Date.now()&&until<=Date.now()+5000}
 export function widgetRefreshDate(settings:WidgetRuntime,nearby:boolean,now=new Date()){
  const active=widgetAwake(settings,now)
  let next=now.getTime()+(active?15000:settings.enabled&&settings.mode==='commute'?30*60000:6*60*60000)

@@ -1,7 +1,7 @@
 {
   "name": "Wusheng Bus",
-  "version": "0.4.2",
-  "description": "兼容手机实时车辆连接，增加连接检查与分阶段错误，车辆失败仍展示线路和站点",
+  "version": "0.4.3",
+  "description": "查询提速与自动更新；精简线路信息，显示车辆车牌和后续到站时间，组件内直接刷新",
   "author": {
     "name": "zxwzywzy"
   },

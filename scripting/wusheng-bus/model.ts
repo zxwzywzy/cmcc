@@ -2,7 +2,16 @@ export type Line={id:string;name:string;start:string;end:string}
 export type Station={id:string;name:string;no:number;distance?:number;latitude?:number;longitude?:number}
 export type Choice={line:Line;direction:number;station:Station;destination?:string}
 export function sameChoice(a:Choice|undefined,b:Choice|undefined){return !!a&&!!b&&a.line.id===b.line.id&&a.direction===b.direction&&a.station.id===b.station.id&&a.station.no===b.station.no}
-export type Arrival={stops:number;minutes?:number;atStation:boolean}
+export type Arrival={stops:number;minutes?:number;atStation:boolean;vehicleId?:string;plate?:string}
+export function vehiclePlate(v:any){const plate=text(v?.license).trim().toUpperCase();return /^[\u3400-\u9fffA-Z0-9·-]{5,12}$/.test(plate)?plate:undefined}
+export function reportedPlate(rows:any[],choice:Choice){return rows.filter(v=>text(v.lineId)===choice.line.id&&Number(v.bizType??v.upOrDown)===choice.direction).sort((a,b)=>Math.abs((finite(a.stationNo)??Infinity)-choice.station.no)-Math.abs((finite(b.stationNo)??Infinity)-choice.station.no)).map(vehiclePlate).find(Boolean)}
+export function followingLabel(a:Arrival|undefined,time:number|undefined,live=true,prefix='下一辆'){
+ if(!a||!live)return undefined
+ if(a.atStation)return prefix+' · 已到站'
+ if(a.stops===0)return prefix+' · 本站附近'
+ if(a.minutes!==undefined&&Number.isFinite(a.minutes)&&a.minutes>0&&time&&Number.isFinite(time)){const at=new Date(time+a.minutes*60000).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});return prefix+' · 约'+at+' · '+a.minutes+'分钟'}
+ return prefix+' · '+a.stops+'站 · 时间待更新'
+}
 export function estimateLabel(a:Arrival|undefined,live=true,vehicleCount=0){
  if(!live)return '预计时间待更新'
  if(!a)return vehicleCount>0?'暂无待到站车辆':'暂无车辆'
@@ -17,13 +26,15 @@ export function normalizeLines(body:any):Line[]{if(body?.code!==0||!Array.isArra
 export function normalizeStations(body:any):Station[]{if(body?.code!==0||!Array.isArray(body?.data?.data))throw Error('站点查询未成功');return body.data.data.map((v:any)=>({id:text(v.stationId),name:text(v.stationName),no:finite(v.stationNo),distance:finite(v.distance),latitude:finite(v.latitude),longitude:finite(v.longitude)})).filter((v:any)=>v.id&&v.name&&v.no!==undefined).sort((a:Station,b:Station)=>a.no-b.no)}
 export function normalizeAccount(body:any){if(body?.code!==0||!body?.data||typeof body.data!=='object')throw Error('登录授权验证失败，请在微信刷新个人信息后重新抓取登录');const n=finite(body.data.cardCashfee);return {balance:n===undefined?undefined:n/100,cardTail:text(body.data.cardNo).slice(-4),fetchedAt:Date.now()}}
 export function arrivals(rows:any[],choice:Choice,stations:Station[]):Arrival[]{
- const target=choice.station.no
+ const target=choice.station.no,seen=new Set<string>()
  return rows.filter(v=>text(v.lineId)===choice.line.id&&Number(v.bizType??v.upOrDown)===choice.direction).flatMap(v=>{
   const no=finite(v.stationNo);if(no===undefined||no>target)return []
+  const vehicleId=text(v.vehicleId)||undefined,plate=vehiclePlate(v),identity=vehicleId||plate
+  if(identity){if(seen.has(identity))return [];seen.add(identity)}
   const stops=target-no,atStation=stops===0&&Number(v.ioStation)===1
   let minutes:number|undefined
   const speed=finite(v.speed),segments=stations.filter(s=>s.no>no&&s.no<=target)
   if(stops>0&&speed!==undefined&&speed>0&&segments.length===stops&&segments.every(s=>s.distance!==undefined&&(s.distance as number)>=0)){const meters=segments.reduce((a,s)=>a+s.distance!,0);if(meters>0)minutes=Math.ceil(meters/(speed*1000/60))}
-  return [{stops,atStation,minutes}]
- }).sort((a,b)=>a.stops-b.stops).slice(0,3)
+  return [{stops,atStation,minutes,vehicleId,plate}]
+ }).sort((a,b)=>a.stops-b.stops||Number(b.atStation)-Number(a.atStation)||(a.minutes??Infinity)-(b.minutes??Infinity)).slice(0,3)
 }

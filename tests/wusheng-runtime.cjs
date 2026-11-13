@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict'),vm=require('node:vm'),esbuild=require('esbuild');
 // Make the simulated phone's local hours differ from UTC, on every test host.
 process.env.TZ='Asia/Shanghai';
-const NativeDate=Date,ROOT='scripting/wusheng-bus/',RUNTIME='wusheng.bus.widget.runtime.v2';
+const NativeDate=Date,ROOT='scripting/wusheng-bus/',RUNTIME='wusheng.bus.widget.runtime.v3';
 const bundles={};
 for(const entry of ['runtime.ts','widget.tsx','app_intents.tsx','paging.ts'])bundles[entry]=esbuild.buildSync({entryPoints:[ROOT+entry],bundle:true,format:'cjs',platform:'neutral',external:['scripting','./view','./nearby-view'],jsxFactory:'h',write:false,logOverride:{'impossible-typeof':'silent'}}).outputFiles[0].text;
 const route={lineId:'1135524964556869651',lineName:'101',upOrDown:1,stationsId:'s2',stationsNo:2,stationsList:[{stationId:'s1',stationName:'上一站',stationNo:1,distance:0},{stationId:'s2',stationName:'候车站',stationNo:2,distance:500}]};
@@ -77,12 +77,14 @@ function find(node,predicate){if(!node||typeof node!=='object')return;if(Array.i
  const fixedSwitch=harness({nearby:false,mode:'always'});await fixedSwitch.intent('FixedDirection');assert.equal(fixedSwitch.store['wusheng.bus.choice'].direction,2);assert.equal(fixedSwitch.store['wusheng.bus.arrival'].choice.station.id,'s2');assert.equal(fixedSwitch.calls.ws,1);assert.equal(fixedSwitch.calls.location,0);const fixedOff=harness({nearby:false,enabled:false});await fixedOff.intent('FixedDirection');noIO(fixedOff);
 
  for(const mode of ['manual','commute','always'])for(const enabled of [true,false]){
-  const h=harness({mode,enabled});cached(h);const before=JSON.stringify(h.runtime.widgetRuntime()),params={stopId:'stop-A',family:'systemMedium',slot:'2'};
+  const h=harness({mode,enabled});cached(h);h.store['wusheng.bus.nearby.v2'].time=h.now;const before=JSON.stringify(h.runtime.widgetRuntime()),params={stopId:'stop-A',family:'systemMedium',slot:'2'};
   await h.intent('Page',{...params,step:1});assert.equal(h.paging.servicePage(h.store['wusheng.bus.nearby.v2'],'systemMedium','2').index,0);await h.widget();noIO(h);
   await h.intent('Direction',params);assert.equal(h.paging.selectedDirection('systemMedium','2'),2);assert.equal(h.paging.selectedDirection('systemMedium','1'),1);await h.widget();noIO(h);assert.equal(JSON.stringify(h.runtime.widgetRuntime()),before,'paging/direction preserve enabled and mode');
   if(!enabled){await h.intent('Wake');assert.equal(h.paging.selectedDirection('systemMedium','2'),2)}
  }
- const expiry=harness({mode:'always'});cached(expiry);await expiry.intent('Page',{stopId:'stop-A',family:'systemMedium',slot:'2',step:1});await expiry.widget();noIO(expiry);expiry.advance(30001);await expiry.widget();assert.equal(expiry.calls.ws,1,'automatic updates resume after local redraw guard');
+ const expiry=harness({mode:'always'});cached(expiry);expiry.store['wusheng.bus.nearby.v2'].time=expiry.now;await expiry.intent('Page',{stopId:'stop-A',family:'systemMedium',slot:'2',step:1});await expiry.widget();noIO(expiry);expiry.advance(30001);await expiry.widget();assert.equal(expiry.calls.ws,1,'automatic updates resume after local redraw guard');
+ const staleAuto=harness({mode:'always'});cached(staleAuto);staleAuto.runtime.noteWidgetInteraction();await staleAuto.widget();assert.equal(staleAuto.calls.ws,1,'a local redraw guard cannot suppress a stale automatic snapshot');
+ const migrated=harness();migrated.store['wusheng.bus.widget.runtime.v2']={enabled:true,mode:'manual'};assert.equal(migrated.runtime.widgetRuntime().mode,'always');migrated.store['wusheng.bus.widget.runtime.v2']={enabled:false,mode:'commute'};assert.equal(migrated.runtime.widgetRuntime().enabled,false);assert.equal(migrated.runtime.widgetRuntime().mode,'commute');
  const stale=harness({mode:'manual'});cached(stale);stale.store['wusheng.bus.nearby.v2'].time=stale.now;stale.store['wusheng.bus.nearby.v2'].stale=true;assert.equal((await stale.widget()).node.props.snapshot.stale,true,'a previous failure stays stale');
  for(const code of [bundles['widget.tsx'],bundles['app_intents.tsx']])assert.doesNotMatch(code,/function requestRide|function rideImage|ride-page|fromTap/,'widget and intent dependency graphs never import ride code');
  console.log('PASS runtime defaults/patching; actual widget + intents with real API/nearby modules: zero sleep/off IO, local commute boundaries, timestamps/staleness, explicit refresh/locate/wake, automatic updates, pause, per-stack page/direction, and tap-only QR isolation.');
