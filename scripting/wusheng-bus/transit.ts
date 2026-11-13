@@ -35,6 +35,10 @@ export async function loadRouteDetail(request:RouteRequest,snapshot?:NearbySnaps
  const live=snapshot&&!snapshot.stale&&Date.now()>=snapshot.time&&Date.now()-snapshot.time<=30000
  const shared=live?snapshot.services.find(r=>r.choice.line.id===request.lineId&&r.choice.direction===request.direction&&r.choice.station.id===target.id&&r.choice.station.no===target.no):undefined
  if(shared)return {request,line,direction:request.direction,stations,stop,position,items:stop?shared.items:[],positions:shared.positions,time:snapshot!.time}
- const rows=await vehicles(request.lineId,request.direction)
- return {request,line,direction:request.direction,stations,stop,position,items:stop?arrivals(rows,choice,stations):[],positions:positions(rows,{choice,stations},stop?coordinate(stop):undefined).map(p=>stop?p:{...p,distanceMeters:undefined,distanceKind:undefined}),time:Date.now()}
+ try{
+  const rows=await vehicles(request.lineId,request.direction)
+  return {request,line,direction:request.direction,stations,stop,position,items:stop?arrivals(rows,choice,stations):[],positions:positions(rows,{choice,stations},stop?coordinate(stop):undefined).map(p=>stop?p:{...p,distanceMeters:undefined,distanceKind:undefined}),time:Date.now()}
+ }catch(e){
+  return {request,line,direction:request.direction,stations,stop,position,items:[],positions:[],time:Date.now(),stale:true,message:(e as Error).message}
+ }
 }

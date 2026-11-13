@@ -1,4 +1,5 @@
-import { fetch, WebSocket } from 'scripting'
+import * as Scripting from 'scripting'
+import { fetch } from 'scripting'
 import JSONBig from './vendor/json-bigint.js'
 import { readAccount,type Account } from './account'
 import { normalizeLines,normalizeStations,normalizeAccount,arrivals,sameChoice,type Choice,type Station } from './model'
@@ -16,13 +17,50 @@ export function choice():Choice|undefined{return Storage.get<Choice>('wusheng.bu
 export function saveChoice(c:Choice){Storage.set('wusheng.bus.choice',c);Storage.set('wusheng.bus.arrival',null)}
 export type BusSnapshot={choice:Choice;items:ReturnType<typeof arrivals>;vehicleCount?:number;time:number;stale?:boolean;message?:string}
 export function vehicles(lineId:string,direction:number){return vehicleBatch([{lineId,upOrDown:direction}])}
+type ConnectionStage='unavailable'|'connecting'|'connected'|'received'|'connect_timeout'|'response_timeout'|'invalid_response'|'send_error'|'network_error'|'closed'
+type ConnectionStatus={stage:ConnectionStage;source:'global'|'module'|'none';time:number;connected:boolean;messages:number;durationMs:number;networkCode?:string}
+const CONNECTION_KEY='wusheng.bus.vehicle.connection.v1'
+export function vehicleConnectionStatus():ConnectionStatus|undefined{try{return Storage.get<ConnectionStatus>(CONNECTION_KEY)||undefined}catch{return undefined}}
+function vehicleText(message:any):string|undefined{
+ const data=message&&typeof message==='object'&&'data' in message?message.data:message
+ if(typeof data==='string')return data
+ if(data&&typeof data.toRawString==='function'){const text=data.toRawString('utf-8');if(typeof text==='string')return text}
+ return undefined
+}
 export function vehicleBatch(queries:{lineId:string;upOrDown:number}[]):Promise<any[]>{
+ if(!queries.length)return Promise.resolve([])
  return new Promise((resolve,reject)=>{
-  let settled=false,ws:WebSocket|undefined
-  const finish=(rows?:any[])=>{if(settled)return;settled=true;clearTimeout(timer);try{ws?.close()}catch{};rows?resolve(rows):reject(Error('实时车辆通道暂不可用'))}
-  const timer=setTimeout(()=>finish(),6500)
-  try{ws=new WebSocket('wss://wsdata.wskyzx.com:25790/ws');ws.onopen=()=>{try{ws!.send(JSON.stringify(queries))}catch{finish()}};ws.onmessage=message=>{if(typeof message!=='string')return;try{const d=parse(message);if(Array.isArray(d))finish(d)}catch{}};ws.onerror=()=>finish();ws.onclose=()=>finish()}catch{finish()}
+  const native=(globalThis as any).WebSocket,exported=(Scripting as any).WebSocket,Socket=typeof native==='function'?native:typeof exported==='function'?exported:undefined
+  const start=Date.now(),status:ConnectionStatus={stage:'connecting',source:Socket?Socket===native?'global':'module':'none',time:start,connected:false,messages:0,durationMs:0}
+  let settled=false,ws:any,timer:ReturnType<typeof setTimeout>|undefined
+  const finish=(stage:ConnectionStage,rows?:any[],error?:any)=>{
+   if(settled)return;settled=true;if(timer!==undefined)clearTimeout(timer)
+   const code=String(error?.message||'').match(/\b(-1\d{3})\b/)?.[1]
+   Object.assign(status,{stage,time:Date.now(),durationMs:Date.now()-start,...(code?{networkCode:code}:{})})
+   try{Storage.set(CONNECTION_KEY,status)}catch{}
+   try{ws?.close()}catch{}
+   if(rows!==undefined){resolve(rows);return}
+   const reason=stage==='unavailable'?'实时车辆接口不可用，请更新 Scripting':stage==='connect_timeout'?'实时车辆连接超时（尚未连上服务器）':stage==='response_timeout'?'实时车辆等待数据超时（已连接服务器）':stage==='invalid_response'?'实时车辆数据格式暂不兼容':stage==='send_error'?'实时车辆订阅发送失败':stage==='closed'?'实时车辆连接被关闭':'实时车辆连接失败（网络或TLS错误'+(code?' '+code:'')+'）'
+   reject(Error(reason))
+  }
+  if(!Socket){finish('unavailable');return}
+  timer=setTimeout(()=>finish('connect_timeout'),12000)
+  try{
+   ws=new Socket('wss://wsdata.wskyzx.com:25790/ws')
+   ws.onopen=()=>{if(settled||status.connected)return;status.connected=true;clearTimeout(timer);timer=setTimeout(()=>finish(status.messages?'invalid_response':'response_timeout'),10000);try{ws.send(JSON.stringify(queries))}catch(e){finish('send_error',undefined,e)}}
+   ws.onmessage=(message:any)=>{if(settled)return;status.messages++;try{const text=vehicleText(message);if(text===undefined)return;const data=parse(text);if(Array.isArray(data))finish('received',data)}catch{}}
+   ws.onerror=(e:any)=>finish('network_error',undefined,e)
+   ws.onclose=()=>finish('closed')
+  }catch(e){finish('network_error',undefined,e)}
  })
+}
+export async function checkTransitConnection(){
+ try{
+  const lines=await loadLines(),line=lines.find(l=>/^101(?:路)?$/.test(l.name))||lines[0]
+  if(!line)return '线路接口已连接，但未返回可测试的线路'
+  const rows=await vehicleBatch([1,2].map(upOrDown=>({lineId:line.id,upOrDown})))
+  return '线路接口正常；'+line.name+'车辆通道已连接，返回 '+rows.length+' 条车辆记录（两方向）'
+ }catch(e){return (e as Error).message}
 }
 export async function current():Promise<BusSnapshot|undefined>{
  const c=choice();if(!c)return undefined

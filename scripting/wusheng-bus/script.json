@@ -1,7 +1,7 @@
 {
   "name": "Wusheng Bus",
-  "version": "0.4.1",
-  "description": "修复101等线路的实时车辆坐标识别，区分车辆已过本站与线路无车，支持组件直达地图",
+  "version": "0.4.2",
+  "description": "兼容手机实时车辆连接，增加连接检查与分阶段错误，车辆失败仍展示线路和站点",
   "author": {
     "name": "zxwzywzy"
   },

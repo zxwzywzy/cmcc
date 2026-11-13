@@ -18,7 +18,7 @@ export function createTransitSession(updated:(state:TransitState)=>void=()=>{}){
    const snapshot=await nearbyCurrent({enable:true,force:true})
    if(current!==epoch||!ready())return
    let detail:RouteDetail|undefined,routeError=''
-   if(request){try{detail=await loadRouteDetail(request,snapshot)}catch(e){routeError=(e as Error).message;if(state.detail&&state.detail.request.lineId===request.lineId&&state.detail.direction===request.direction)detail={...state.detail,stale:true,message:routeError}}}
+   if(request){try{detail=await loadRouteDetail(request,snapshot);if(detail?.stale)routeError=detail.message||'车辆位置未更新'}catch(e){routeError=(e as Error).message;if(state.detail&&state.detail.request.lineId===request.lineId&&state.detail.direction===request.direction)detail={...state.detail,stale:true,message:routeError}}}
    if(current!==epoch||!ready())return
    emit({snapshot,detail,loading:false,message:routeError||(snapshot?.stale?snapshot.message||'暂未更新':'')})
    if(snapshot&&!snapshot.stale||detail&&!detail.stale)updated({...state})

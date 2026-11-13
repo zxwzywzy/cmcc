@@ -1,12 +1,12 @@
 # Paperclip Cookie · Quantumult X
 
-## 新增：武胜公交 Scripting 小组件（0.4.1）
+## 新增：武胜公交 Scripting 小组件（0.4.2）
 
-[下载安装包](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus-0.4.1.scripting) · [圈 X 登录抓取订阅](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/Wusheng-Bus-Login.conf?v=0.2.7) · [安装说明与验证范围](scripting/wusheng-bus/README.md)
+[下载安装包](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus-0.4.2.scripting) · [圈 X 登录抓取订阅](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/Wusheng-Bus-Login.conf?v=0.2.7) · [安装说明与验证范围](scripting/wusheng-bus/README.md)
 
 根据当前位置查最近站台、距离与车辆上报的所在站；支持小中大尺寸，参数留空。仅点击“乘车码”或取码页刷新按钮时请求新码及余额，无后台或定时取码。已验证本人授权取得真实 PNG 码图，扫码乘车仍待设备验证。登录改为圈 X 抓取微信小程序授权，再从 BoxJS 点击导入，验证后保存本机 Keychain，无需账号文件。个人凭据不在公开包中。
 
-0.4.1 修复101等线路真实车辆 `lat/lng` 坐标识别，以及车辆已过本站时误报“暂无车辆”；仍显示车辆位置并标明无待到站车辆。保留0.4.0功能：把实时公交独立为首个页签，每条线路只显示一个当前方向；可切线路、换向，点开完整站点、地图、车辆与预计时间。各尺寸组件均可点对应线路直达详情，突出乘车码/换向并移除刷新定位。账号页显示版本号。前台15秒轮询定位和车辆；桌面组件只提交15秒更新请求，实际频率受 iOS 调度限制。保留四种组件布局、订单记录及仅点击乘车码才取新码。
+0.4.2 增加手机全局WebSocket/原生Data兼容、分阶段错误与设置里的车辆连接检查，车辆失败仍展示线路站点。手机网络仍以设备检查结果为准。[48个业务接口复核](docs/wusheng-api-inventory.md)。保留0.4.1：修复101等线路真实车辆 `lat/lng` 坐标识别，以及车辆已过本站时误报“暂无车辆”；仍显示车辆位置并标明无待到站车辆。保留0.4.0功能：把实时公交独立为首个页签，每条线路只显示一个当前方向；可切线路、换向，点开完整站点、地图、车辆与预计时间。各尺寸组件均可点对应线路直达详情，突出乘车码/换向并移除刷新定位。账号页显示版本号。前台15秒轮询定位和车辆；桌面组件只提交15秒更新请求，实际频率受 iOS 调度限制。保留四种组件布局、订单记录及仅点击乘车码才取新码。
 
 ## 新增：四家运营商余量小组件（0.2.3 电信短信验证码登录）
 

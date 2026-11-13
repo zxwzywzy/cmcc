@@ -1,5 +1,5 @@
 import { Button,HStack,Image,List,Navigation,NavigationLink,NavigationStack,Picker,Script,Section,Spacer,Tab,TabView,Text,TextField,Toggle,VStack,Widget,useEffect,useObservable,useState } from 'scripting'
-import { balance,choice,current,loadLines,loadStations,saveChoice,type BusSnapshot } from './api'
+import { balance,choice,current,loadLines,loadStations,saveChoice,checkTransitConnection,type BusSnapshot } from './api'
 import { forgetAccount,readAccount } from './account'
 import { loginFromBoxJS,captureStatus,captureInstallURL,LOGIN_SUBSCRIPTION } from './login'
 import { BusView,clock } from './view'
@@ -53,13 +53,13 @@ function NearbySettings({changed}:{changed:()=>void}){
 }
 function Guide(){return <List navigationTitle="使用说明"><Section header={<Text>实时公交</Text>}><Text>独立页每条线路只显示一个当前方向；切换线路或换向后，点线路查看站点、地图、车辆与预计时间。前台每15秒轮询定位和车辆，切页或退到后台停止。</Text></Section><Section header={<Text>桌面组件</Text>}><Text>可点击组件中的具体线路打开对应详情。“乘车码”和“换向”已突出显示，定位自动更新。组件提交15秒刷新请求，iOS 决定实际执行频率。</Text></Section><Section header={<Text>登录</Text>}><Text>圈 X 抓取后，在账号页点“从 BoxJS 导入”。只有点击乘车码时才获取新码；版本号在账号页。</Text></Section><Section header={<Text>预计到站</Text>}><Text>分钟数依据上报车速和完整站距估算，信息不足时显示待更新。地图连线是站点示意，不代表精确道路轨迹；站点上报的位置不会标为车辆 GPS。</Text></Section></List>}
 function SettingsPage({changed,close,active}:{changed:()=>void;close:any;active:boolean}){
- const [runtime,setRuntime]=useState(widgetRuntime())
+ const [runtime,setRuntime]=useState(widgetRuntime()),[connectionNote,setConnectionNote]=useState(''),[checking,setChecking]=useState(false)
  useEffect(()=>{if(active)setRuntime(widgetRuntime())},[active])
  function update(patch:Partial<WidgetRuntime>){setRuntime(saveWidgetRuntime(patch));changed();Widget.reloadAll()}
  return <List navigationTitle="设置" toolbar={{cancellationAction:close}}>
  <Section header={<Text>组件运行</Text>} footer={<Text>{runtime.mode==='manual'?'打开实时公交时同步更新组件。':runtime.mode==='commute'?'通勤更新：07:00–09:00、17:00–19:30。':'前台15秒轮询；桌面向 iOS 请求15秒刷新，实际频率由系统决定。'}</Text>}><Toggle title="启用桌面组件" value={runtime.enabled} onChanged={v=>update({enabled:v})}/><Picker title="刷新策略" value={runtime.mode} onChanged={v=>update({mode:v as WidgetRuntime['mode']})} pickerStyle="segmented"><Text tag="manual">随前台</Text><Text tag="commute">通勤</Text><Text tag="always">自动</Text></Picker></Section>
  <Section><NavigationLink destination={<NearbySettings changed={changed}/>}><Text>站台与定位</Text></NavigationLink><NavigationLink destination={<LoginHelp changed={changed}/>}><Text>登录与抓取</Text></NavigationLink></Section>
- <Section><NavigationLink destination={<Guide/>}><Text>使用说明</Text></NavigationLink></Section>
+ <Section><Button title={checking?'正在检查连接…':'检查实时车辆连接'} disabled={checking} action={async()=>{if(checking)return;setChecking(true);setConnectionNote('');try{setConnectionNote(await checkTransitConnection())}finally{setChecking(false)}}}/>{connectionNote?<Text font={12} foregroundStyle="secondaryLabel">{connectionNote}</Text>:null}<NavigationLink destination={<Guide/>}><Text>使用说明</Text></NavigationLink></Section>
  <Section header={<Text>武胜公交 · {APP_VERSION}</Text>}><Button title="更新脚本" action={async()=>{await Safari.openURL(Script.createImportScriptsURLScheme(['https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus.scripting']))}}/></Section>
  </List>
 }
