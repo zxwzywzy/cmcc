@@ -4,7 +4,7 @@ export type Coordinate={latitude:number;longitude:number}
 export type Position=Coordinate&{timestamp:number}
 export type Service={choice:Choice;stations:Station[]}
 export type NearbyStop={id:string;name:string;coordinate:Coordinate;meters:number;services:Service[]}
-export type VehiclePosition={label:string;stationName?:string;coordinate?:Coordinate;gps:boolean;distanceMeters?:number;distanceKind?:'gps'|'stations';passed?:boolean}
+export type VehiclePosition={label:string;stationNo?:number;stationName?:string;coordinate?:Coordinate;gps:boolean;distanceMeters?:number;distanceKind?:'gps'|'stations';passed?:boolean}
 export type NearbySnapshot={stop?:NearbyStop;otherStops:NearbyStop[];services:{choice:Choice;items:ReturnType<typeof arrivals>;positions:VehiclePosition[]}[];position?:Position;time:number;stale?:boolean;locationStale?:boolean;message?:string}
 const CACHE='wusheng.bus.nearby.v2'
 export function cachedNearby(){return Storage.get<NearbySnapshot>(CACHE)||undefined}
@@ -31,7 +31,7 @@ export function positions(rows:any[],service:Service,target?:Coordinate):Vehicle
   const source=station as Station&Partial<Coordinate>|undefined
   const no=finite(v.stationNo),targetNo=service.choice.station.no,segments=no===undefined?[]:service.stations.filter(s=>s.no>Math.min(no,targetNo)&&s.no<=Math.max(no,targetNo))
   const estimate=no!==undefined&&segments.length===Math.abs(no-targetNo)&&segments.every(s=>s.distance!==undefined&&s.distance>=0)?segments.reduce((sum,s)=>sum+s.distance!,0):undefined
-  return {label:service.choice.line.name,stationName:station?.name||(finite(v.stationNo)!==undefined?'第'+v.stationNo+'站（站名未返回）':undefined),coordinate:c||coordinate(source),gps:!!c,distanceMeters:c&&target?distance(c,target):estimate,distanceKind:c&&target?'gps':estimate!==undefined?'stations':undefined,passed:finite(v.stationNo)!==undefined?Number(v.stationNo)>service.choice.station.no:undefined}
+  return {label:service.choice.line.name,stationNo:no,stationName:station?.name||(finite(v.stationNo)!==undefined?'第'+v.stationNo+'站（站名未返回）':undefined),coordinate:c||coordinate(source),gps:!!c,distanceMeters:c&&target?distance(c,target):estimate,distanceKind:c&&target?'gps':estimate!==undefined?'stations':undefined,passed:finite(v.stationNo)!==undefined?Number(v.stationNo)>service.choice.station.no:undefined}
  })
 }
 export async function freshPosition(force=true):Promise<Position>{
@@ -59,8 +59,8 @@ export async function nearbyCurrent(options:{widget?:boolean;enable?:boolean;for
  }catch(e){
   const previous=Storage.get<NearbySnapshot>(CACHE),message=(e as Error).message
   // Never reuse a vehicle snapshot from another station after a successful new location/stop lookup.
-  if(previous&&(!position||previous.position&&distance(position,previous.position)<100)&&(!stop||stop.id===previous.stop?.id))return {...previous,stale:true,message}
-  return {stop,otherStops,services:stop?.services.map(s=>({choice:s.choice,items:[],positions:[]}))||[],position,time:Date.now(),stale:true,message}
+  if(previous&&(!position||previous.position&&distance(position,previous.position)<100)&&(!stop||stop.id===previous.stop?.id)){const fallback={...previous,stale:true,message};Storage.set(CACHE,fallback);return fallback}
+  const fallback:NearbySnapshot={stop,otherStops,services:stop?.services.map(s=>({choice:s.choice,items:[],positions:[]}))||[],position,time:Date.now(),stale:true,message};Storage.set(CACHE,fallback);return fallback
  }
 }
 export function distance(a:Coordinate,b:Coordinate){const r=Math.PI/180,dlat=(b.latitude-a.latitude)*r,dlon=(b.longitude-a.longitude)*r;const x=Math.sin(dlat/2)**2+Math.cos(a.latitude*r)*Math.cos(b.latitude*r)*Math.sin(dlon/2)**2;return 6371000*2*Math.atan2(Math.sqrt(x),Math.sqrt(Math.max(0,1-x)))}
