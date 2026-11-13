@@ -1,4 +1,4 @@
-import { Button,Image,List,Navigation,Script,Section,Text,Widget,useEffect,useState } from 'scripting'
+import { Button,HStack,Image,List,Navigation,Script,Section,Spacer,Text,VStack,Widget,useEffect,useState } from 'scripting'
 import { createRideSession,initialRideState,type RideState } from './ride'
 import { clock } from './view'
 import { readAccount } from './account'
@@ -10,11 +10,8 @@ export function RidePage({fromTap=false,tapId=0,active=true,close,toAccount}:{fr
  useEffect(()=>{if(!active){session.hide();return}if(fromTap&&!gate.initial){gate.initial=true;session.refresh()}else if(tapId>gate.lastTap){gate.lastTap=tapId;session.refresh()}},[active,fromTap,tapId])
  useEffect(()=>()=>session.dispose(),[])
  return <List navigationTitle="乘车码" toolbar={{cancellationAction:close||<Button title="关闭" action={()=>{session.dispose();dismiss()}}/>}}>
- <Section header={<Text>公交卡余额</Text>}><Text>{state.card?.balance!==undefined?(state.cardStale?'上次余额 ¥':'余额 ¥')+state.card.balance.toFixed(2):'余额未获取'}</Text>{state.card?<Text>{'更新于 '+clock(state.card.fetchedAt)}</Text>:null}</Section>
- <Section footer={<Text>仅点击乘车码入口或本页刷新按钮时取新码，同时更新余额。20秒后仅隐藏图片，不自动取新码；此时限不是官方二维码有效期。</Text>}>
- {state.image?<Image image={state.image} resizable frame={{width:240,height:240}} background="white"/>:null}
- <Text>{state.note}</Text><Button title={state.busy?'正在取码…':'获取 / 刷新乘车码'} disabled={state.busy||!active} action={()=>session.refresh()}/><Button title="打开微信（手动进入武胜公交）" action={async()=>{await Safari.openURL('weixin://')}}/>
+ <Section><VStack alignment="center" spacing={14} frame={{maxWidth:'infinity',minHeight:250}}>{state.image?<Image image={state.image} resizable frame={{width:240,height:240}} background="white"/>:<><Image systemName="qrcode" font={52} foregroundStyle="secondaryLabel"/><Text font={13} foregroundStyle="secondaryLabel">{state.busy?'正在获取…':'点击获取乘车码'}</Text></>}</VStack><Button title={state.busy?'正在获取…':'获取 / 刷新乘车码'} disabled={state.busy||!active} action={()=>session.refresh()}/>{!state.busy&&!state.image&&state.note&&!state.note.startsWith('点击获取')?<Text font={11} foregroundStyle="secondaryLabel">{state.note}</Text>:null}
  {!readAccount()&&toAccount?<Button title="去账号页从 BoxJS 登录" action={toAccount}/>:null}
- </Section><Section><Text>取码不强制重新定位；无可用定位缓存时使用公交站参考坐标。附近公交仍通过真实定位查询。取码失败时可回微信使用。</Text></Section></List>
+ </Section><Section><HStack spacing={8}><Image systemName="creditcard" font={17}/><VStack alignment="leading" spacing={3}><Text font={12}>公交卡余额</Text>{state.card?<Text font={10} foregroundStyle="secondaryLabel">{clock(state.card.fetchedAt)}</Text>:null}</VStack><Spacer/><Text font={25} fontWeight="semibold" monospacedDigit>{state.card?.balance!==undefined?'¥'+state.card.balance.toFixed(2):'—'}</Text></HStack></Section></List>
 }
 export async function presentRide(){await Navigation.present({element:<RidePage fromTap/>});Script.exit()}

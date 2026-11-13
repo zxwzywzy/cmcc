@@ -5,7 +5,7 @@ import json, shutil
 root=Path(__file__).resolve().parents[1]
 source=root/'scripting/wusheng-bus'
 version=json.loads((source/'script.json').read_text(encoding='utf-8'))['version']
-files=[source/n for n in ['index.tsx','widget.tsx','view.tsx','api.ts','model.ts','account.ts','login.ts','appearance.ts','nearby.ts','paging.ts','nearby-view.tsx','map.tsx','ride.ts','ride-page.tsx','app_intents.tsx','script.json','README.md']]+sorted((source/'vendor').glob('*'))
+files=[source/n for n in ['index.tsx','widget.tsx','view.tsx','widget-ui.tsx','api.ts','model.ts','account.ts','login.ts','appearance.ts','runtime.ts','rest-view.tsx','orders.ts','orders-page.tsx','nearby.ts','paging.ts','nearby-view.tsx','map.tsx','ride.ts','ride-page.tsx','app_intents.tsx','script.json','README.md']]+sorted((source/'vendor').glob('*'))
 package=root/'packages'/('wusheng-bus-'+version+'.zip')
 with ZipFile(package,'w',compression=ZIP_DEFLATED) as z:
  for p in files:

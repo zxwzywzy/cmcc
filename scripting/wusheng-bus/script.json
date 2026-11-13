@@ -1,7 +1,7 @@
 {
   "name": "Wusheng Bus",
-  "version": "0.2.8",
-  "description": "与运营商组件相同：圈 X 抓取后直接从现有 BoxJS 导入；保留四页与点击取码",
+  "version": "0.3.0",
+  "description": "四种组件布局、手动休眠与通勤更新、预计到站、账号订单记录及点击乘车码",
   "author": {
     "name": "zxwzywzy"
   },

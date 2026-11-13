@@ -4,7 +4,7 @@ import { readAccount,type Account } from './account'
 import { normalizeLines,normalizeStations,normalizeAccount,arrivals,type Choice,type Station } from './model'
 const parse=JSONBig({storeAsString:true,protoAction:'ignore',constructorAction:'ignore'}).parse
 const API='https://wsapi.wskyzx.com:26110'
-const paths=new Set(['/api/AppBusiness/GetBusLine','/api/AppBusiness/GetBusLineStationsByLId','/api/WechatInfo/GetUserInfo','/api/AppBusiness/GetBusStations','/api/AppBusiness/GetPayRrcode'])
+const paths=new Set(['/api/AppBusiness/GetBusLine','/api/AppBusiness/GetBusLineStationsByLId','/api/WechatInfo/GetUserInfo','/api/AppBusiness/GetBusStations','/api/AppBusiness/GetPayRrcode','/api/AppBusiness/GetConsumedAndRechargeRecord'])
 export async function post(path:string,data:any,account?:Account){
  if(!paths.has(path))throw Error('不支持此查询')
  try{const r=await fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json',...(account?{Authorization:account.authorization}:{})},body:JSON.stringify(data),redirect:'error'});if(!r.ok)throw Error();return parse(await r.text())}catch{throw Error('公交网络查询失败，请稍后重试')}

@@ -27,7 +27,11 @@ async function boxValue(host:string,key:string){
  try{envelope=JSON.parse(raw)}catch{throw Error('BoxJS 未返回抓取记录，请检查 BoxJS 重写是否生效')}
  return typeof envelope?.val==='string'?envelope.val:''
 }
-export async function captureStatus(host=boxHost()){
+function hosts(override?:string){
+ if(override!==undefined){const host=override.trim();if(!/^(boxjs\.com|boxjs\.net)$/.test(host))throw Error('BoxJS 域名只能填写 boxjs.com 或 boxjs.net');return [host]}
+ return [...new Set([boxHost(),'boxjs.com','boxjs.net'])].filter(h=>/^(boxjs\.com|boxjs\.net)$/.test(h))
+}
+async function statusAt(host:string){
  const [record,diagnostic]=await Promise.allSettled([boxValue(host,BOX_KEY),boxValue(host,DIAG_KEY)])
  if(record.status==='fulfilled'&&record.value){try{capturedAccount(record.value);return 'BoxJS 已读到完整授权，直接点击账号页的“从 BoxJS 导入”即可。'}catch{}}
  if(diagnostic.status==='fulfilled'&&diagnostic.value){
@@ -38,11 +42,18 @@ export async function captureStatus(host=boxHost()){
  }
  if(record.status==='rejected')throw record.reason
  if(diagnostic.status==='rejected')throw diagnostic.reason
- return '尚未命中业务请求。请更新抓取订阅并启用重写、MITM，确认主机名为 wsapi.wskyzx.com（不带端口），证书已安装并信任；关闭微信后台后重开小程序，点击乘车码或消费记录。'
+ return ''
 }
-export async function loginFromBoxJS(host=boxHost()){
- host=host.trim()
- const previous=readAccount(),raw=await boxValue(host,BOX_KEY)
+export async function captureStatus(override?:string){
+ let connected=false,error:unknown
+ for(const host of hosts(override)){try{const value=await statusAt(host);connected=true;if(value)return value}catch(e){error=e}}
+ if(!connected)throw error
+ return '尚未命中业务请求。请更新抓取订阅并启用重写、MITM，确认主机名为 wsapi.wskyzx.com（不带端口），证书已安装并信任；重开小程序，点击乘车码或消费记录。'
+}
+export async function loginFromBoxJS(override?:string){
+ const previous=readAccount();let raw='',host='',connected=false,error:unknown
+ for(const candidate of hosts(override)){try{raw=await boxValue(candidate,BOX_KEY);connected=true;if(raw){host=candidate;break}}catch(e){error=e}}
+ if(!connected)throw error
  if(!raw)throw Error('还没有抓到登录授权，请点击“检查抓取状态”，或重新进入微信乘车码/消费记录页面')
  const account=capturedAccount(raw)
  const card=await balance(account)

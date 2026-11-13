@@ -1,12 +1,12 @@
 # Paperclip Cookie · Quantumult X
 
-## 新增：武胜公交 Scripting 小组件（0.2.8 试用版）
+## 新增：武胜公交 Scripting 小组件（0.3.0）
 
-[下载安装包](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus-0.2.8.scripting) · [圈 X 登录抓取订阅](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/Wusheng-Bus-Login.conf?v=0.2.7) · [安装说明与验证范围](scripting/wusheng-bus/README.md)
+[下载安装包](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus-0.3.0.scripting) · [圈 X 登录抓取订阅](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/Wusheng-Bus-Login.conf?v=0.2.7) · [安装说明与验证范围](scripting/wusheng-bus/README.md)
 
 根据当前位置查最近站台、距离与车辆上报的所在站；支持小中大尺寸，参数留空。仅点击“乘车码”或取码页刷新按钮时请求新码及余额，无后台或定时取码。已验证本人授权取得真实 PNG 码图，扫码乘车仍待设备验证。登录改为圈 X 抓取微信小程序授权，再从 BoxJS 点击导入，验证后保存本机 Keychain，无需账号文件。个人凭据不在公开包中。
 
-0.2.8 对齐运营商组件的操作：圈 X 更新公交抓取重写 → 微信里抓取授权 → Scripting 账号页“从 BoxJS 导入”。共用现有 BoxJS，不需要额外添加应用订阅、打开 BoxJS 页面或导入文件。保留“乘车码 / 账号 / 设置 / 组件样式”四页、小中大主题设置与仅点击取码；已有登录继续保留。
+0.3.0 精简界面，余额移至码图下方；小中大分别可选全景、到站卡、账单卡、极简四种布局。新增组件总开关，默认手动休眠，支持通勤时段或持续更新；账号页可看乘车扣费和充值记录。实时公交与组件显示有依据的预计时间，信息不足时提示待更新。登录仍是圈 X 抓取后从现有 BoxJS 直接导入，自动识别域名，不用额外订阅或文件；仅点击乘车码才取新码。
 
 ## 新增：四家运营商余量小组件（0.2.3 电信短信验证码登录）
 

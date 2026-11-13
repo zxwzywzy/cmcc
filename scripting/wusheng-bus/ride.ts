@@ -45,8 +45,8 @@ export function createRideSession(changed:(state:RideState)=>void,balanceUpdated
     if(fresh){Storage.set('wusheng.bus.balance',fresh);balanceUpdated()}
     const card=fresh||Storage.get<Card>('wusheng.bus.balance')||undefined
     const image=qr.status==='fulfilled'?qr.value.image:undefined
-    const note=qr.status==='fulfilled'?'乘车码已获取，需更新时请点击刷新。':qr.reason instanceof Error?qr.reason.message:'乘车码获取失败，请点击重试'
-    emit({image,card,cardStale:!fresh,busy:false,issuedAt:image?Date.now():undefined,note:note+(!fresh?' 余额更新失败，显示上次数据。':'')})
+    const note=qr.status==='fulfilled'?'已更新':qr.reason instanceof Error?qr.reason.message:'获取失败，请点击重试'
+    emit({image,card,cardStale:!fresh,busy:false,issuedAt:image?Date.now():undefined,note:note+(!fresh?' 余额暂未更新。':'')})
     if(image)timer=setTimeout(()=>{timer=undefined;emit({...state,image:undefined,issuedAt:undefined,note:'本页已隐藏乘车码，请点击重新获取'})},20000)
    }finally{if(request===sequence)locked=false}
   },
