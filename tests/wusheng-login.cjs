@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs'),esbuild=require('esbuild');
-const source=fs.readFileSync('scripts/wusheng_bus_login-v0.2.6.js','utf8'),key='wusheng_bus_login_v1',diag='wusheng_bus_login_diag_v1',authorization='Bearer SYNTHETIC_TEST_TOKEN_12345';
+const source=fs.readFileSync('scripts/wusheng_bus_login-v0.2.7.js','utf8'),key='wusheng_bus_login_v1',diag='wusheng_bus_login_diag_v1',authorization='Bearer SYNTHETIC_TEST_TOKEN_12345';
 function capture(request,store={},extra={}){
  let done=0;const notices=[],writes=[];
  vm.runInNewContext(source,{$request:request,$prefs:{valueForKey:k=>store[k],setValueForKey:(v,k)=>{store[k]=v;writes.push({k,v});return true}},$notify:(...v)=>notices.push(v),$done:()=>done++,Date,...extra});
@@ -45,9 +45,9 @@ function fixture(){
  const absent=fixture();absent.setReply({});await assert.rejects(()=>absent.login.loginFromBoxJS(),/还没有抓到/);assert.equal(Object.keys(absent.keys).length,0);assert.equal(absent.calls.length,1);
  const malformed=fixture();malformed.setReply({val:'{"version":1}'});await assert.rejects(()=>malformed.login.loginFromBoxJS(),/不完整/);assert.equal(Object.keys(malformed.keys).length,0);
  const changed=fixture();changed.mutate(()=>changed.keys['wusheng.bus.auth.v1']=JSON.stringify({authorization:'Bearer OTHER_SYNTHETIC_TOKEN_12345',userId:'9'}));await assert.rejects(()=>changed.login.loginFromBoxJS(),/账号已变化/);assert.equal(JSON.parse(changed.keys['wusheng.bus.auth.v1']).userId,'9');
- const ready=fixture();assert.match(await ready.login.captureStatus(),/已抓到完整授权/);assert.equal(ready.calls.filter(r=>r.type==='verify').length,0);assert.equal(Object.keys(ready.keys).length,0);
+ const ready=fixture();assert.match(await ready.login.captureStatus(),/BoxJS 已读到完整授权/);assert.equal(ready.calls.filter(r=>r.type==='verify').length,0);assert.equal(Object.keys(ready.keys).length,0);
  const noHit=fixture();noHit.setReply({});assert.match(await noHit.login.captureStatus(),/尚未命中业务请求/);
  const hit=fixture();hit.setReply({val:JSON.stringify({state:'missing-auth',version:'0.2.6'})});assert.match(await hit.login.captureStatus(),/已命中.*没有登录 Token/);
- const index=fs.readFileSync('scripting/wusheng-bus/index.tsx','utf8');assert.doesNotMatch(index,/DocumentPicker|SecureField|decodeAccount|readAsString|ImportAccount/);assert.match(index,/从圈 X 导入登录/);assert.match(index,/检查抓取状态/);
+ const index=fs.readFileSync('scripting/wusheng-bus/index.tsx','utf8');assert.doesNotMatch(index,/DocumentPicker|SecureField|decodeAccount|readAsString|ImportAccount/);assert.match(index,/从 BoxJS 导入登录/);assert.match(index,/检查抓取状态/);
  console.log('PASS scoped QX profile/ride-request/login-response capture, SNI hostname without port, exact long user IDs, no phone grants or QR responses retained, throttled safe diagnostics, BoxJS verification before saving and capture-state UI.');
 })().catch(e=>{console.error(e);process.exitCode=1});

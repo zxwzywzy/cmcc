@@ -1,0 +1,20 @@
+{
+  "id": "zxwzywzy.wusheng.bus",
+  "name": "武胜公交",
+  "author": "zxwzywzy",
+  "repo": "https://github.com/zxwzywzy/cmcc",
+  "apps": [
+    {
+      "id": "wusheng_bus_login",
+      "name": "武胜公交登录",
+      "author": "zxwzywzy",
+      "repo": "https://github.com/zxwzywzy/cmcc",
+      "keys": ["wusheng_bus_login_v1", "wusheng_bus_login_diag_v1"],
+      "descs_html": ["启用专用圈 X 抓取订阅，在微信武胜公交打开乘车码或消费记录。", "抓取记录保存在本机；返回 Scripting 的账号页，点击“从 BoxJS 导入登录”。无需手填下面的内容。"],
+      "settings": [
+        {"id": "wusheng_bus_login_v1", "name": "登录授权（自动抓取）", "val": "", "type": "textarea", "rows": 2, "desc": "由抓取脚本自动保存，无需编辑。"},
+        {"id": "wusheng_bus_login_diag_v1", "name": "抓取状态", "val": "", "type": "textarea", "rows": 2, "desc": "仅记录版本、固定状态与时间。"}
+      ]
+    }
+  ]
+}

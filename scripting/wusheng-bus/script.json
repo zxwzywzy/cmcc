@@ -1,7 +1,7 @@
 {
   "name": "Wusheng Bus",
-  "version": "0.2.6",
-  "description": "圈 X 抓取登录，附近站台、车辆地图；点击获取乘车码及余额",
+  "version": "0.2.7",
+  "description": "乘车码、账号、设置、组件样式四页；账号页从 BoxJS 登录，点击取码及余额",
   "author": {
     "name": "zxwzywzy"
   },

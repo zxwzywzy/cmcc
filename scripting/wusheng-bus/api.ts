@@ -11,7 +11,7 @@ export async function post(path:string,data:any,account?:Account){
 }
 export async function loadLines(){return normalizeLines(await post('/api/AppBusiness/GetBusLine',{pageIndex:1,pageSize:100}))}
 export async function loadStations(lineId:string,direction:number){if(!/^\d+$/.test(lineId)||![1,2].includes(direction))throw Error('线路方向无效');return normalizeStations(await post('/api/AppBusiness/GetBusLineStationsByLId',{lineId,direction}))}
-export async function balance(a=readAccount()){if(!a)throw Error('请先在首页通过圈 X 抓取登录');const result=normalizeAccount(await post('/api/WechatInfo/GetUserInfo',{userId:a.userId},a));const owner=readAccount();if(owner?.authorization===a.authorization&&owner?.userId===a.userId)Storage.set('wusheng.bus.balance',result);return result}
+export async function balance(a=readAccount()){if(!a)throw Error('请先到账号页从 BoxJS 导入登录');const result=normalizeAccount(await post('/api/WechatInfo/GetUserInfo',{userId:a.userId},a));const owner=readAccount();if(owner?.authorization===a.authorization&&owner?.userId===a.userId)Storage.set('wusheng.bus.balance',result);return result}
 export function choice():Choice|undefined{return Storage.get<Choice>('wusheng.bus.choice')||undefined}
 export function saveChoice(c:Choice){Storage.set('wusheng.bus.choice',c);Storage.set('wusheng.bus.arrival',null)}
 export type BusSnapshot={choice:Choice;items:ReturnType<typeof arrivals>;time:number;stale?:boolean;message?:string}

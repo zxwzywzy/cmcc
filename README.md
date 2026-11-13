@@ -1,12 +1,12 @@
 # Paperclip Cookie · Quantumult X
 
-## 新增：武胜公交 Scripting 小组件（0.2.6 试用版）
+## 新增：武胜公交 Scripting 小组件（0.2.7 试用版）
 
-[下载安装包](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus-0.2.6.scripting) · [圈 X 登录抓取订阅](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/Wusheng-Bus-Login.conf?v=0.2.6) · [安装说明与验证范围](scripting/wusheng-bus/README.md)
+[下载安装包](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus-0.2.7.scripting) · [圈 X 登录抓取订阅](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/Wusheng-Bus-Login.conf?v=0.2.7) · [BoxJS 应用订阅](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/Wusheng-Bus.boxjs.json) · [安装说明与验证范围](scripting/wusheng-bus/README.md)
 
 根据当前位置查最近站台、距离与车辆上报的所在站；支持小中大尺寸，参数留空。仅点击“乘车码”或取码页刷新按钮时请求新码及余额，无后台或定时取码。已验证本人授权取得真实 PNG 码图，扫码乘车仍待设备验证。登录改为圈 X 抓取微信小程序授权，再从 BoxJS 点击导入，验证后保存本机 Keychain，无需账号文件。个人凭据不在公开包中。
 
-0.2.6 修正抓取订阅 MITM 主机名为不带端口的 wsapi.wskyzx.com，增加乘车码请求、消费记录请求和正式登录响应作为抓取入口，新增“检查抓取状态”。更新订阅后重开微信小程序，点击乘车码或消费记录，再回脚本点“从圈 X 导入登录”。沿用运营商组件已配置的 BoxJS、重写与 MITM；保留点击取码和原有样式。
+0.2.7 增加底部“乘车码 / 账号 / 设置 / 组件样式”四页。普通打开默认账号页，顶部直接显示“从 BoxJS 导入登录”。圈 X 本地抓取 → BoxJS 读取 → Scripting 验证保存；可添加 BoxJS 应用订阅，在 BoxJS 列表看到武胜公交。样式页支持深色、浅色、跟随系统、小中大预览及余额开关。点击乘车码导航才取码，离开隐藏，定时器不重新获取；已有登录继续保留。新版更新入口在设置页。
 
 ## 新增：四家运营商余量小组件（0.2.3 电信短信验证码登录）
 

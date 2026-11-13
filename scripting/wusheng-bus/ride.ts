@@ -14,7 +14,7 @@ export function rideCoordinate(){
 }
 // Only the explicit foreground tap session calls this function. No timers or widget entry call it.
 export async function requestRide(account=readAccount()){
- if(!account)throw Error('请先在首页通过圈 X 抓取登录')
+ if(!account)throw Error('请先到账号页从 BoxJS 导入登录')
  const p=rideCoordinate()
  const body=await post('/api/AppBusiness/GetPayRrcode',{pageIndex:1,pageSize:10,userId:account.userId,latitude:p.latitude,longitude:p.longitude},account)
  if(body?.code!==0||typeof body?.data?.qrcode!=='string'||!body.data.qrcode){
@@ -28,18 +28,18 @@ export async function requestRide(account=readAccount()){
 export function initialRideState():RideState{return {card:readAccount()?Storage.get<Card>('wusheng.bus.balance')||undefined:undefined,cardStale:true,busy:false,note:'点击获取本次乘车码及余额'}}
 // Construction is inert; refresh() is called only by a user tap or the page opened by that tap.
 export function createRideSession(changed:(state:RideState)=>void,balanceUpdated=()=>{}){
- let state=initialRideState(),disposed=false,locked=false,timer:ReturnType<typeof setTimeout>|undefined
+ let state=initialRideState(),disposed=false,locked=false,sequence=0,timer:ReturnType<typeof setTimeout>|undefined
  const emit=(next:RideState)=>{state=next;if(!disposed)changed({...state})}
  const clear=()=>{if(timer!==undefined)clearTimeout(timer);timer=undefined}
  return {
   async refresh(){
    if(disposed||locked)return
-   locked=true;clear();emit({...state,image:undefined,issuedAt:undefined,busy:true,note:'正在获取新乘车码和余额…'})
+   locked=true;const request=++sequence;clear();emit({...state,image:undefined,issuedAt:undefined,busy:true,note:'正在获取新乘车码和余额…'})
    try{
     const account=readAccount()
-    if(!account){emit({cardStale:true,busy:false,note:'请先在首页通过圈 X 抓取登录'});return}
+    if(!account){emit({cardStale:true,busy:false,note:'请先到账号页从 BoxJS 导入登录'});return}
     const [qr,profile]=await Promise.allSettled([requestRide(account),balance(account)])
-    if(disposed)return
+    if(disposed||request!==sequence)return
     if(!sameAccount(account,readAccount())){emit({cardStale:true,busy:false,note:'账号已变化，请重新点击获取'});return}
     const fresh=profile.status==='fulfilled'&&profile.value.balance!==undefined?profile.value:qr.status==='fulfilled'&&qr.value.card?qr.value.card:profile.status==='fulfilled'?profile.value:undefined
     if(fresh){Storage.set('wusheng.bus.balance',fresh);balanceUpdated()}
@@ -48,9 +48,10 @@ export function createRideSession(changed:(state:RideState)=>void,balanceUpdated
     const note=qr.status==='fulfilled'?'乘车码已获取，需更新时请点击刷新。':qr.reason instanceof Error?qr.reason.message:'乘车码获取失败，请点击重试'
     emit({image,card,cardStale:!fresh,busy:false,issuedAt:image?Date.now():undefined,note:note+(!fresh?' 余额更新失败，显示上次数据。':'')})
     if(image)timer=setTimeout(()=>{timer=undefined;emit({...state,image:undefined,issuedAt:undefined,note:'本页已隐藏乘车码，请点击重新获取'})},20000)
-   }finally{locked=false}
+   }finally{if(request===sequence)locked=false}
   },
-  dispose(){disposed=true;clear();state={...state,image:undefined}},
+  hide(){sequence++;locked=false;clear();emit({...state,image:undefined,issuedAt:undefined,busy:false,note:'点击获取本次乘车码及余额'})},
+  dispose(){disposed=true;sequence++;clear();state={...state,image:undefined}},
  }
 }
 export async function rideImage(raw:string){
