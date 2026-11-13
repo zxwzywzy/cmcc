@@ -40,7 +40,7 @@ function More({changed}:{changed:()=>void}){
  <Section header={<Text>账号管理</Text>}><NavigationLink destination={<ImportAccount changed={()=>{setAccountRevision(n=>n+1);changed()}}/>}><Text>{hasAccount?'重新导入账号':'导入私有账号'}</Text></NavigationLink>{hasAccount?<Button title="移除本机账号" action={()=>{forgetAccount();setAccountRevision(n=>n+1);changed();Widget.reloadAll()}}/>:null}</Section>
  <Section header={<Text>定位数据</Text>} footer={<Text>清除后附近站台需要重新允许定位并查询；固定站台选择不会被删除。</Text>}><Button title="清除本机定位缓存" action={()=>{clearNearby();changed();Widget.reloadAll()}}/></Section>
  <Section><NavigationLink destination={<Guide/>}><Text>使用说明与桌面组件</Text></NavigationLink></Section>
- <Section header={<Text>脚本更新 · 0.2.2</Text>} footer={<Text>更新后重新运行脚本并刷新桌面组件。</Text>}><Button title="更新脚本" action={async()=>{await Safari.openURL(Script.createImportScriptsURLScheme(['https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus.scripting']))}}/></Section>
+ <Section header={<Text>脚本更新 · 0.2.3</Text>} footer={<Text>更新后重新运行脚本并刷新桌面组件。</Text>}><Button title="更新脚本" action={async()=>{await Safari.openURL(Script.createImportScriptsURLScheme(['https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus.scripting']))}}/></Section>
  </List>
 }
 function Home(){
