@@ -6,7 +6,7 @@ import { BusView,clock } from './view'
 import type { Line,Station } from './model'
 import { isNearby,setMode,nearbyCurrent,cachedNearby,meters,destination,type NearbySnapshot } from './nearby'
 import { NearbyView } from './nearby-view'
-import { TransitHome } from './transit-home'
+import { RealtimePage } from './transit-page'
 import { RidePage } from './ride-page'
 import { appearance,saveAppearance,saveStyle,BUS_STYLES,type Appearance,type BusStyle,type BusFamily } from './appearance'
 import { widgetRuntime,saveWidgetRuntime,type WidgetRuntime } from './runtime'
@@ -18,7 +18,7 @@ import { APP_VERSION } from './version'
 function LoginHelp({changed}:{changed:()=>void}){
  const [note,setNote]=useState(''),[busy,setBusy]=useState(false)
  async function diagnose(){if(busy)return;setBusy(true);try{setNote(await captureStatus())}catch(e){setNote((e as Error).message)}finally{setBusy(false)}}
- return <List navigationTitle="登录与抓取"><Section footer={<Text>启用抓取重写，在微信“武胜公交”中登录并打开乘车码或消费记录，回账号页导入即可。</Text>}><Button title="添加抓取订阅" action={async()=>{try{await Safari.openURL(captureInstallURL())}catch{setNote('请复制链接到圈 X 重写资源')}}}/><Button title="复制抓取链接" action={async()=>{await Pasteboard.setString(LOGIN_SUBSCRIPTION);setNote('链接已复制')}}/><Button title={busy?'正在检查…':'检查抓取状态'} disabled={busy} action={diagnose}/>{note?<Text font={12} foregroundStyle="secondaryLabel">{note}</Text>:null}</Section>{readAccount()?<Section><Button title="退出本机登录" action={()=>{forgetAccount();changed();Widget.reloadAll();setNote('已退出登录')}}/></Section>:null}</List>
+ return <List navigationTitle="登录与抓取"><Section footer={<Text>当前使用微信手机号授权登录。先在微信“武胜公交”完成手机号授权，再通过圈 X 抓取；回账号页点“从 BoxJS 导入”。Scripting 暂不提供独立短信登录。</Text>}><Button title="添加抓取订阅" action={async()=>{try{await Safari.openURL(captureInstallURL())}catch{setNote('请复制链接到圈 X 重写资源')}}}/><Button title="复制抓取链接" action={async()=>{await Pasteboard.setString(LOGIN_SUBSCRIPTION);setNote('链接已复制')}}/><Button title={busy?'正在检查…':'检查抓取状态'} disabled={busy} action={diagnose}/>{note?<Text font={12} foregroundStyle="secondaryLabel">{note}</Text>:null}</Section>{readAccount()?<Section><Button title="退出本机登录" action={()=>{forgetAccount();changed();Widget.reloadAll();setNote('已退出登录')}}/></Section>:null}</List>
 }
 
 function AccountsPage({changed,active,close}:{changed:()=>void;active:boolean;close:any}){
@@ -51,7 +51,7 @@ function NearbySettings({changed}:{changed:()=>void}){
  <Text>{isNearby()?near?.stop?.name||'附近站台自动查询':c?c.line.name+' · '+c.station.name:'尚未选择候车站'}</Text>
  <Button title={busy?'正在设置…':'使用附近站台'} disabled={busy} action={()=>refresh(true)}/>{note?<Text>{note}</Text>:null}<NavigationLink destination={<Lines changed={changed}/>}><Text>选择固定线路、方向和站点</Text></NavigationLink></Section></List>
 }
-function Guide(){return <List navigationTitle="使用说明"><Section header={<Text>实时公交</Text>}><Text>顶部可切换附近公交、车辆地图和换乘规划。车辆地图显示运营线路已上报车辆，每5秒前台更新；附近公交每15秒查询。切页或退到后台停止动态查询。</Text></Section><Section header={<Text>桌面组件</Text>}><Text>可点击组件中的具体线路打开对应详情。“乘车码”和“换向”已突出显示，定位自动更新。组件提交15秒刷新请求，iOS 决定实际执行频率。</Text></Section><Section header={<Text>登录</Text>}><Text>圈 X 抓取后，在账号页点“从 BoxJS 导入”。只有点击乘车码时才获取新码；版本号在账号页。</Text></Section><Section header={<Text>预计到站</Text>}><Text>分钟数依据上报车速和完整站距估算，信息不足时显示待更新。地图连线是站点示意，不代表精确道路轨迹；站点上报的位置不会标为车辆 GPS。</Text></Section></List>}
+function Guide(){return <List navigationTitle="使用说明"><Section header={<Text>实时公交</Text>}><Text>独立页每条线路只显示一个当前方向；切换线路或换向后，点线路查看站点、地图、车辆与预计时间。前台每15秒轮询定位和车辆，切页或退到后台停止。</Text></Section><Section header={<Text>桌面组件</Text>}><Text>可点击组件中的具体线路打开对应详情。“乘车码”和“换向”已突出显示，定位自动更新。组件提交15秒刷新请求，iOS 决定实际执行频率。</Text></Section><Section header={<Text>登录</Text>}><Text>圈 X 抓取后，在账号页点“从 BoxJS 导入”。只有点击乘车码时才获取新码；版本号在账号页。</Text></Section><Section header={<Text>预计到站</Text>}><Text>分钟数依据上报车速和完整站距估算，信息不足时显示待更新。地图连线是站点示意，不代表精确道路轨迹；站点上报的位置不会标为车辆 GPS。</Text></Section></List>}
 function SettingsPage({changed,close,active}:{changed:()=>void;close:any;active:boolean}){
  const [runtime,setRuntime]=useState(widgetRuntime()),[connectionNote,setConnectionNote]=useState(''),[checking,setChecking]=useState(false)
  useEffect(()=>{if(active)setRuntime(widgetRuntime())},[active])
@@ -78,7 +78,7 @@ export function BusApp({openRide=false,openRoute,chooseLine=false}:{openRide?:bo
  const changed=()=>setRevision(n=>n+1),close=<Button title="关闭" action={dismiss}/>
  useEffect(()=>{let previous=selection.value;const listener=()=>{const next=selection.value;if(next===previous)return;previous=next;setActive(next);if(next===1)setRideTap(n=>n+1)};selection.subscribe(listener);return()=>selection.unsubscribe(listener)},[])
  return <TabView selection={selection}>
- <Tab title="实时公交" systemImage="bus.fill" value={0}><NavigationStack><TransitHome active={active===0} close={close} initialRoute={openRoute} chooseLine={chooseLine}/></NavigationStack></Tab>
+ <Tab title="实时公交" systemImage="bus.fill" value={0}><NavigationStack><RealtimePage active={active===0} close={close} initialRoute={openRoute} chooseLine={chooseLine}/></NavigationStack></Tab>
  <Tab title="乘车码" systemImage="qrcode" value={1}><NavigationStack><RidePage active={active===1} tapId={rideTap} close={close} toAccount={()=>selection.setValue(2)}/></NavigationStack></Tab>
  <Tab title="账号" systemImage="person.crop.circle.fill" value={2}><NavigationStack><AccountsPage active={active===2} changed={changed} close={close}/></NavigationStack></Tab>
  <Tab title="设置" systemImage="gearshape.fill" value={3}><NavigationStack><SettingsPage active={active===3} changed={changed} close={close}/></NavigationStack></Tab>

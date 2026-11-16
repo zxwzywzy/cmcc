@@ -1,7 +1,7 @@
 {
   "name": "Wusheng Bus",
-  "version": "0.5.0",
-  "description": "新增换乘规划和全部车辆动态地图；全线路双向订阅、5秒前台更新、车牌与方向筛选",
+  "version": "0.5.1",
+  "description": "移除换乘规划和全部车辆地图；保留原实时公交、组件样式与圈X抓取登录",
   "author": {
     "name": "zxwzywzy"
   },
