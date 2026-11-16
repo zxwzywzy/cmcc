@@ -1,7 +1,7 @@
 {
   "name": "Wusheng Bus",
-  "version": "0.4.3",
-  "description": "查询提速与自动更新；精简线路信息，显示车辆车牌和后续到站时间，组件内直接刷新",
+  "version": "0.5.0",
+  "description": "新增换乘规划和全部车辆动态地图；全线路双向订阅、5秒前台更新、车牌与方向筛选",
   "author": {
     "name": "zxwzywzy"
   },

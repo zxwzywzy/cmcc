@@ -5,7 +5,7 @@ import { readAccount,type Account } from './account'
 import { normalizeLines,normalizeStations,normalizeAccount,arrivals,sameChoice,reportedPlate,type Choice,type Station } from './model'
 const parse=JSONBig({storeAsString:true,protoAction:'ignore',constructorAction:'ignore'}).parse
 const API='https://wsapi.wskyzx.com:26110'
-const paths=new Set(['/api/AppBusiness/GetBusLine','/api/AppBusiness/GetBusLineStationsByLId','/api/WechatInfo/GetUserInfo','/api/AppBusiness/GetBusStations','/api/AppBusiness/GetPayRrcode','/api/AppBusiness/GetConsumedAndRechargeRecord'])
+const paths=new Set(['/api/AppBusiness/GetBusLine','/api/AppBusiness/GetBusLineStationsByLId','/api/WechatInfo/GetUserInfo','/api/AppBusiness/GetBusStations','/api/AppBusiness/GetStationsByName','/api/AppBusiness/GetPayRrcode','/api/AppBusiness/GetConsumedAndRechargeRecord'])
 export async function post(path:string,data:any,account?:Account,timeout=8){
  if(!paths.has(path))throw Error('不支持此查询')
  try{const r=await fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json',...(account?{Authorization:account.authorization}:{})},body:JSON.stringify(data),redirect:'error',...(path==='/api/AppBusiness/GetPayRrcode'?{}:{timeout})});if(!r.ok)throw Error();return parse(await r.text())}catch{throw Error('公交网络查询失败，请稍后重试')}
@@ -34,6 +34,22 @@ function vehicleText(message:any):string|undefined{
  if(typeof data==='string')return data
  if(data&&typeof data.toRawString==='function'){const text=data.toRawString('utf-8');if(typeof text==='string')return text}
  return undefined
+}
+export function watchVehicles(queries:{lineId:string;upOrDown:number}[],received:(rows:any[])=>void,failed:(message:string)=>void){
+ const native=(globalThis as any).WebSocket,exported=(Scripting as any).WebSocket,Socket=typeof native==='function'?native:typeof exported==='function'?exported:undefined
+ let closed=false,ws:any,sendTimer:ReturnType<typeof setTimeout>|undefined,watchdog:ReturnType<typeof setTimeout>|undefined
+ const stop=()=>{if(closed)return;closed=true;clearTimeout(sendTimer);clearTimeout(watchdog);try{ws?.close()}catch{}}
+ const fail=(message:string)=>{if(closed)return;stop();failed(message)}
+ const arm=(ms:number)=>{clearTimeout(watchdog);watchdog=setTimeout(()=>fail('车辆位置暂未更新，正在重新连接'),ms)}
+ if(!Socket||!queries.length){watchdog=setTimeout(()=>fail('实时车辆接口不可用，请检查 Scripting 版本'),0);return stop}
+ try{
+  arm(12000);ws=new Socket('wss://wsdata.wskyzx.com:25790/ws')
+  ws.onopen=()=>{if(closed)return;arm(10000);const send=()=>{if(closed)return;try{ws.send(JSON.stringify(queries));sendTimer=setTimeout(send,5000)}catch{fail('车辆订阅发送失败，正在重新连接')}};send()}
+  ws.onmessage=(message:any)=>{if(closed)return;try{const text=vehicleText(message);if(text===undefined)return;const rows=parse(text);if(!Array.isArray(rows))return;arm(15000);received(rows)}catch{}}
+  ws.onerror=()=>fail('车辆连接中断，正在重新连接')
+  ws.onclose=()=>fail('车辆连接已关闭，正在重新连接')
+ }catch{fail('车辆连接失败，正在重新连接')}
+ return stop
 }
 type VehicleQuery={lineId:string;upOrDown:number}
 const vehicleCache=new Map<string,{time:number;rows:any[]}>(),vehicleFlights=new Map<string,Promise<any[]>>()
