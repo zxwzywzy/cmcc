@@ -1,105 +1,31 @@
-# 脚本与组件目录
+# 我的 Scripting 项目
 
-本仓库按运行平台和用途分类。**现有文件地址保持不变**，已经添加的圈 X 订阅、BoxJS 和下载链接无需重配。
+仓库按项目划分，目前主要维护两个项目。每个项目自己的源码、圈 X 配置、抓取脚本、安装包和文档都放在对应项目目录内。
 
-| 分类 | 内容与入口 |
-|---|---|
-| Scripting 项目 | [项目索引](scripting/README.md)：[运营商组件](scripting/carriers/)、[武胜公交](scripting/wusheng-bus/) |
-| 圈 X / 抓取脚本 | [脚本分类索引](scripts/README.md)：运营商、公交、App、小程序与分发脚本 |
-| 配置与订阅 | [配置索引](docs/configuration-index.md)：根目录 `.conf`、BoxJS 和规则清单 |
-| 安装包 | [下载索引](packages/README.md)：固定链接、版本包与历史版本 |
-| 文档 | [文档索引](docs/README.md) |
-| 开发 | [构建工具](tools/README.md)、[测试](tests/README.md) |
+| 项目 | 项目目录 | 下载 | 配套圈 X 订阅 |
+|---|---|---|---|
+| 运营商组件 | [打开项目](projects/carriers/) | [下载组件](projects/carriers/packages/carriers.zip) | [运营商抓取](projects/carriers/subscriptions/Carrier-Hub-Cookie.conf) |
+| 武胜公交 | [打开项目](projects/wusheng-bus/) | [下载组件](projects/wusheng-bus/packages/wusheng-bus.scripting) | [公交登录抓取](projects/wusheng-bus/subscriptions/Wusheng-Bus-Login.conf) |
 
-新增独立 Scripting 项目请放在 `scripting/<项目名>/`，不要混进其他项目目录。安装包放 `packages/`，构建脚本放 `tools/`，测试放 `tests/`。已公开的旧地址不直接移动或删除。
+## 目录约定
 
----
-
-## 原使用说明
-
-# Paperclip Cookie · Quantumult X
-
-## 新增：武胜公交 Scripting 小组件（0.5.1）
-
-[下载安装包](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus-0.5.1.scripting) · [圈 X 登录抓取订阅](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/Wusheng-Bus-Login.conf?v=0.2.7) · [安装说明与验证范围](scripting/wusheng-bus/README.md)
-
-根据当前位置查最近站台、距离与车辆上报的所在站；支持小中大尺寸，参数留空。仅点击“乘车码”或取码页刷新按钮时请求新码及余额，无后台或定时取码。已验证本人授权取得真实 PNG 码图，扫码乘车仍待设备验证。登录改为圈 X 抓取微信小程序授权，再从 BoxJS 点击导入，验证后保存本机 Keychain，无需账号文件。个人凭据不在公开包中。
-
-0.5.1 移除新增的换乘规划和全部车辆地图，恢复原实时公交页，保留圈X抓取与BoxJS导入。已复核微信手机号授权流程，未发现独立短信登录接口。[登录方式说明](docs/wusheng-login-review.md)。保留0.4.3：精简线路下方文字，显示真实车牌，空间充足时补充下一辆预计钟点；组件和内部页面均适配。优化查询速度：线路详情与附近公交并行、车辆优先显示，定位和余额限时等待，合并重复车辆查询，复用线路站点。默认自动更新，组件右上可直接刷新；iOS仍决定桌面实际运行频率。保留0.4.2：增加手机全局WebSocket/原生Data兼容、分阶段错误与设置里的车辆连接检查，车辆失败仍展示线路站点。手机网络仍以设备检查结果为准。[48个业务接口复核](docs/wusheng-api-inventory.md)。保留0.4.1：修复101等线路真实车辆 `lat/lng` 坐标识别，以及车辆已过本站时误报“暂无车辆”；仍显示车辆位置并标明无待到站车辆。保留0.4.0功能：把实时公交独立为首个页签，每条线路只显示一个当前方向；可切线路、换向，点开完整站点、地图、车辆与预计时间。各尺寸组件均可点对应线路直达详情，突出乘车码/换向并移除刷新定位。账号页显示版本号。前台15秒轮询定位和车辆；桌面组件只提交15秒更新请求，实际频率受 iOS 调度限制。保留四种组件布局、订单记录及仅点击乘车码才取新码。
-
-## 新增：四家运营商余量小组件（0.2.3 电信短信验证码登录）
-
-- [下载 Scripting 安装包](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/carriers-0.2.3.zip)
-- [配套圈 X 抓取订阅](https://raw.githubusercontent.com/zxwzywzy/cmcc/main/Carrier-Hub-Cookie-v0.2.1.conf)
-- [安装步骤与当前限制](scripting/carriers/README.md)
-
-0.2.3 电信登录新增短信验证码入口：手动拼图 → 明确点击发送验证码 → 输入6位验证码 → 登录并保存。验证码只在本次内存使用，Token 存本机 Keychain；失效后需重新验证码登录，不自动发短信。需要支持 UIImage.getPixelData 的 Scripting（3.2.1 或更新）。真实登录待设备验证。
-
-历史更新：0.2.2 新增电信手机号密码直接登录，凭据仅存本机 Keychain，保留圈 X 导入方式。账号页采用简洁卡片列表，点进去查看套餐与账户、备注、登录方式和样式设置；其他运营商不再在列表中展开大段样式设置。
-
-历史更新：0.2.1 删除重复“运营商”底栏，将四家概览、导入、样式与移动号码详情统一到“账号”。联通按成功响应增加可用积分、套餐名称、短信和套餐资源明细；部分接口不返回这些字段时不猜测。电信修正诊断规则与正文规则重叠，并支持只抓到 Token 鉴权请求后导入尝试查询。真机抓取与在线查询仍需确认。
-
-历史更新：0.2.0 新增大、中、小号共享样式和跨运营商双号对照。在“运营商”页选择尺寸与样式，桌面参数留空即可使用；大号另有“四家总览”。移动蓝、联通红、电信紫、广电绿用于区分运营商。此更新不代表电信、广电抓取与查询已通过真机验证。
-
-历史更新：0.1.6 中号在原全景左上角运营商名称处切换，预览也可点；联通、电信、广电各自可设置全景、账单卡、大字余额；中号总览支持标签切换并读取对应样式；统一四家导入入口；已恢复原样式库、外观和默认参数；移动沿用原查询和 12 种样式，四家概览改用“总览”参数；联通、电信、广电新增统一余量视图、BoxJS 导入及白名单查询请求重用。新增三家均待真机验证，广电 App 接口仍属待验证适配；不承诺安装即可查询成功。只有快照时明确标记为旧数据，不包含自动签到。
-
-
-由用户提供的 Loon Cookie 插件转换，原脚本作者及版权归 MaYIHEI 和各原作者所有。原项目：https://github.com/MaYIHEI/paperclip 。源码头部、来源 URL 和上游许可证均保留。
-
-## 添加订阅
-
-在圈 X 的重写资源中添加下面的 URL，关闭资源解析器（原生圈 X 格式），启用该资源：
-
-```
-https://raw.githubusercontent.com/zxwzywzy/cmcc/main/Paperclip-Cookie-QuantumultX.conf
+```text
+projects/
+  carriers/               运营商组件
+    source/               源码
+    subscriptions/        运营商圈 X 配置
+    capture/              运营商配套抓取文件
+    packages/             安装包
+    tests/                测试
+  wusheng-bus/            武胜公交
+    source/               源码
+    subscriptions/        公交圈 X、BoxJS 配置
+    capture/              公交登录及诊断抓取
+    packages/             安装包
+    docs/                 公交说明
+    tests/                测试
 ```
 
-也可将下面一行放入现有配置的 `[rewrite_remote]` 区段：
+旧根目录订阅、`scripting/`、`scripts/`、`packages/` 为已有用户保留兼容地址，暂不删除，不再作为首页的项目分类。其他历史 App / 小程序抓取文件未混入以上两个项目，也未删除。根目录 `tools/`、`tests/` 和包管理文件保留既有开发流程。
 
-```ini
-https://raw.githubusercontent.com/zxwzywzy/cmcc/main/Paperclip-Cookie-QuantumultX.conf, tag=Paperclip Cookie, update-interval=86400, opt-parser=false, enabled=true
-```
-
-开启重写、MITM，安装并在 iOS 设置中完全信任圈 X 证书。打开相应 App 或小程序的会员/签到页面，看到抓取成功通知后关闭本订阅。无需手动复制 Scripts 文件；需能够访问 GitHub Raw 下载配置与脚本。请使用当前版本圈 X；若脚本下载失败，检查资源更新和脚本日志。
-
-这是重写订阅，不是完整代理配置，不要用来替换整份配置。订阅提供 hostname，需确保资源的主机名没有被禁用。本项目不含个人 Cookie、Token、私钥或 MITM 证书；请不要将抓取结果提交到仓库。
-
-## 保留的行为
-
-- 原始 Paperclip 33 条逻辑规则加广电试用规则，共 34 条：31 条请求、3 条响应，13 条需要 body；合并相同 URL 的分发后为 32 条重写。
-- 保留原有 32 个 MITM 域名及正则大小写不敏感标志，并加入广电 app.10099.com.cn，共 33 个域名。
-- 龙湖根据 x-lf-channel 精确匹配 L0 / C2，不匹配则跳过。
-- 北京华联仅在 Referer 包含 wx1b1dda695dff82c8 时执行；龙德广场原规则没有条件，保持无条件执行，所以该 Referer 命中时两份脚本均执行。分发器隔离变量并聚合完成回调。
-- requires_body=true 转成 script-request-body / script-response-body；其余为 script-request-header。
-
-## 限制与更新
-
-仅抓 Cookie，自动签到需另配任务。Loon 的 Cookie 不会自动迁移，需要重新抓取。圈 X body 类型重写在 body 为空时不执行，可能与 Loon 不同；未增加二进制 body 参数。证书固定、接口变化和原脚本兼容性仍可能导致失败。
-
-脚本是转换时的快照，不会自动同步原作者更新。更新龙湖、北京华联或龙德脚本时，同时更新对应 dispatcher 中嵌入的副本。配置引用本仓库 main 分支，订阅更新会获取仓库最新配置；必要时在圈 X 内更新脚本缓存。
-
-已检查 33 个 JavaScript 文件语法、规则数量、主机名数量和 5 个请求头分发用例；尚未在 iOS Quantumult X 真机实测。
-
-格式参考：https://github.com/crossutility/Quantumult-X/blob/master/sample.conf 和 https://github.com/crossutility/Quantumult-X/blob/master/sample-import-rewrite.snippet 。
-
-## 中国广电 App 抓取（试用版）
-
-独立订阅：
-
-```
-https://raw.githubusercontent.com/zxwzywzy/cmcc/main/ChinaBroadnet-App-Cookie.conf
-```
-
-与合集一样在重写资源中添加，关闭资源解析器；启用重写与 MITM，安装并信任证书。打开中国广电 App，登录后进入“我的”，刷新余量/套餐/账户页面。
-
-**未在真机验证。** 已知公开的小程序脚本使用 wx.10099.com.cn/contact-web/api/busi/qryUserInfo，读取 access 请求头及 body.data；App 域名 app.10099.com.cn 有公开规则记录，但本版本的 `/contact-web/api/busi/` 路径族和 App 鉴权字段是待验证推断，不能据此宣称 App 兼容。若 App 使用不同接口/请求头/响应令牌，或证书固定，本版可能无提示或无法捕获。
-
-本版只捕获已知字段 access / authorization / cookie / token / access-token / x-access-token，以及业务请求 URL、方法、正文和少量上下文头，保存到圈 X 本地 `china_broadnet_app_capture_v1`。通知只表示本地保存成功，不代表令牌有效、可自动签到或兼容其他广电脚本。不打印、不上传凭据，不发送任何网络请求；下一个账号覆盖上一个账号。排除常见登录/验证码字段并限制正文大小，但保存内容仍是敏感登录数据。
-
-使用 script-request-body 保留可能必需的请求体；空 body 不触发是圈 X 的限制。请求捕获路径暂不扩到所有域名或登录接口。抓到后关闭本独立订阅。如无提示，请先反馈“无提示”；进一步定位只需脱敏后的请求域名、路径、请求方法和字段名称，不要公开 Cookie/Token 或完整抓包。
-
-广电试用规则已合并至 Paperclip Cookie 合集：更新原合集订阅即可使用。若已添加广电独立订阅，请关闭它，避免重复抓取。合并仅涉及 Cookie 抓取规则，不添加自动签到任务。通过 JavaScript 语法检查和 7 个模拟保存/去重/范围/过滤/失败用例，仍需用户设备验证。
-
-参考：
-- https://github.com/wuhuhuuuu/study/blob/main/Scripts/ChinaBroadnet/ChinaBroadnet.cookie.js
-- https://github.com/blackmatrix7/ios_rule_script （包含 app.10099.com.cn 的 App 域名规则）
+以后新增项目，使用 `projects/<项目名>/`，将该项目的全部相关文件放进去，而不是另建一个全仓库抓取脚本分类。

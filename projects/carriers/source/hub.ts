@@ -1,0 +1,191 @@
+import { fetch } from 'scripting'
+import { saveTelecomSmsSession, configureTelecomLogin, queryTelecomLogin, telecomLoginInfo, telecomAccountMatches, removeTelecomLogin } from './telecom-login'
+import { CARRIER_STYLE_NAMES, resolveCarrierStyle, rememberUsage, clearUsage, type SharedCarrierStyle, type CarrierFamily } from './carrier-design'
+import { queryUnicomCookie } from './unicom-cookie'
+import { queryTelecomRequest, telecomRequest, telecomIdentity } from './telecom-cookie'
+import { endpoint, normalize, safeRequest, names } from './normalizers.js'
+import { loadAccount as loadMobile, listAccounts as mobileAccounts, importFromBoxJS as importMobile, removeAccount as removeMobile, clearCache as clearMobileCache } from './mobile/api'
+export type Provider = 'cmcc' | 'unicom' | 'telecom' | 'broadnet'
+export type Metrics = {provider:Provider; balance?:number;phoneTail?:string;flowScope?:'general'|'all'; flowMB?:number; voice?:number; flowUsedMB?:number; flowTotalMB?:number; voiceUsed?:number; voiceTotal?:number; unicomSchema?:number;telecomSchema?:number;points?:number;packageName?:string;sms?:number;resourceDetails?:{name:string;kind:string;unit?:string;remaining?:number;used?:number;total?:number}[]; fetchedAt:number}
+export type CarrierRecord = {metrics:Metrics;request:any;queryReady:boolean}
+export type CarrierState = {provider:Provider;metrics?:Metrics;message?:string;stale?:boolean}
+const TELECOM_COOKIE='carrier.hub.telecom.app.request.v1'
+const UNICOM_COOKIE='carrier.hub.unicom.cookie.v1'
+const CREDENTIALS='carrier.hub.credentials.v1'
+const SETTINGS='carrier.hub.settings.v1'
+const store=Storage as unknown as {get<T>(k:string):T|null;set(k:string,v:unknown):void}
+export const providerNames=names as Record<Provider,string>
+export const providerIds:Provider[]=['cmcc','unicom','telecom','broadnet']
+export function preferences():{host:string;refresh:number} {
+ try{return {...{host:'boxjs.com',refresh:120},...JSON.parse(store.get<string>(SETTINGS)||'{}')}}catch{return {host:'boxjs.com',refresh:120}}
+}
+export function savePreferences(host:string,refresh:number){
+ if(!/^(?:boxjs\.com|boxjs\.net)$/.test(host.trim()))throw Error('请选择 boxjs.com 或 boxjs.net')
+ store.set(SETTINGS,JSON.stringify({host:host.trim(),refresh:[30,60,120,240].includes(refresh)?refresh:120}))
+}
+function read():Partial<Record<Provider,CarrierRecord>> {try{return JSON.parse(Keychain.get(CREDENTIALS)||'{}')}catch{return {}}}
+function write(v:Partial<Record<Provider,CarrierRecord>>){Keychain.set(CREDENTIALS,JSON.stringify(v));for(const record of Object.values(v)){if(record?.metrics)rememberUsage(record.metrics)}}
+export function forget(p:Provider){clearUsage(p);if(p==='cmcc'){for(const tel of mobileAccounts())removeMobile(tel)}else{const x=read();delete x[p];write(x);if(p==='unicom')Keychain.remove(UNICOM_COOKIE);if(p==='telecom'){Keychain.remove(TELECOM_COOKIE);removeTelecomLogin()}}}
+function validMetrics(p:Provider,m:any):m is Metrics {
+ return m&&m.provider===p&&typeof m.fetchedAt==='number'&&Number.isFinite(m.fetchedAt)&&['balance','flowMB','voice'].some(k=>typeof m[k]==='number'&&Number.isFinite(m[k]))
+}
+export async function importAll(hostOverride?:string):Promise<string>{
+ const host=hostOverride?.trim()||preferences().host
+ if(!/^(?:boxjs\.com|boxjs\.net)$/.test(host))throw Error("请选择 boxjs.com 或 boxjs.net")
+ let mobileMessage='',otherMessage=''
+ try{const ids=await importMobile(host);mobileMessage=`移动 ${ids.length} 个账号`}catch{mobileMessage='移动未导入（未抓取或 BoxJS 不可达）'}
+ try{
+  const res=await fetch(`https://${host}/query/data/carrier_hub_v1`)
+  if(!res.ok)throw Error('BoxJS 查询失败')
+  const envelope=await res.json() as {val?:string}
+  const raw=JSON.parse(envelope.val||'{}')
+  if(raw.version!==1||!raw.accounts)throw Error('没有新抓取的数据')
+  const records=read();const imported: string[]=[]
+  for(const p of ['unicom','telecom','broadnet'] as Provider[]){
+   if(p==='unicom'&&Keychain.get(UNICOM_COOKIE))continue
+   if(p==='telecom'&&telecomLoginInfo())continue
+   const r=raw.accounts[p];if(!r||!validMetrics(p,r.metrics))continue
+   const request=safeRequest(r.request)
+   if(request&&endpoint(request.url)!==p)continue
+   records[p]={metrics:r.metrics,request,queryReady:!!request&&(request.method==='GET'||!!request.body)};imported.push(providerNames[p])
+  }
+  if(!imported.length)throw Error('没有可导入的数据')
+  write(records);otherMessage=`已导入：${imported.join('、')}`
+ }catch{otherMessage='原查询快照未导入：请确认 BoxJS 可用，并用配套订阅重新抓取查询响应'}
+ let cookieMessage=''
+ try{
+  const r=await fetch(`https://${host}/query/data/10010.cookie`)
+  const data=r.ok?await r.json() as {val?:unknown}:{}
+  const cookie=typeof data.val==='string'?data.val.trim():''
+  if(cookie&&cookie.length<=32768&&!/[\r\n]/.test(cookie)){
+   const previous=Keychain.get(UNICOM_COOKIE)
+   if(previous!==cookie){clearUsage('unicom');const records=read();delete records.unicom;write(records)}
+   Keychain.set(UNICOM_COOKIE,cookie)
+   const result=await loadProvider('unicom',true)
+   cookieMessage=result.metrics&&!result.stale?'联通 riskSync Cookie 已导入并查到数据':'联通 riskSync Cookie 已导入；余量查询尚未成功'
+  }
+ }catch{}
+ let telecomMessage=''
+ try{
+  const r=await fetch(`https://${host}/query/data/10000.app.request`)
+  const data=r.ok?await r.json() as {val?:unknown}:{}
+  const req=typeof data.val==='string'?telecomRequest(JSON.parse(data.val)):null
+  if(req&&!telecomLoginInfo()){
+   const serialized=JSON.stringify(req),previous=Keychain.get(TELECOM_COOKIE)
+   if(previous!==serialized){
+    let same=false;try{const a=telecomIdentity(JSON.parse(previous||'null')),b=telecomIdentity(req);same=!!a&&a===b}catch{}
+    if(!same)clearUsage('telecom')
+    const records=read();delete records.telecom;write(records)
+   }
+   Keychain.set(TELECOM_COOKIE,serialized)
+   const result=await loadProvider('telecom',true)
+   telecomMessage=result.metrics&&!result.stale?'电信 App 鉴权已导入并查到数据':'电信 App 鉴权已导入，但查询未成功；请刷新 App 套餐余量后重新抓取'
+  }
+ }catch{}
+ let diagnostics=''
+ try{
+  const res=await fetch(`https://${host}/query/data/carrier_hub_diagnostics_v1`)
+  if(res.ok){
+   const data=await res.json() as {val?:string};const parsed=JSON.parse(data.val||'{}')
+   const labels:Record<string,string>={'request-seen':'请求已命中，尚无可解析响应','auth-saved':'App 鉴权请求已保存，可导入尝试查询','nearby-query':'看到了业务流量，但接口未适配','http-error':'接口返回失败','schema-mismatch':'响应未适配或会话失效','saved':'已保存查询数据'}
+   const rows=(['unicom','telecom','broadnet'] as Provider[]).flatMap(p=>{
+    const stage=parsed?.providers?.[p]?.stage
+    return labels[stage]?[`${providerNames[p]}：${labels[stage]}`]:[]
+   })
+   if(rows.length)diagnostics='\n抓取诊断：\n'+rows.join('\n')
+  }
+ }catch{}
+ return mobileMessage+'；'+otherMessage+(cookieMessage?'\n'+cookieMessage:'')+(telecomMessage?'\n'+telecomMessage:'')+diagnostics
+}
+export async function loadProvider(p:Provider,force=false):Promise<CarrierState>{
+ if(p==='cmcc'){
+  if(force)clearMobileCache()
+  try{const a=await loadMobile();const metrics:Metrics={provider:p,balance:a.balance,points:a.points,flowMB:a.general?.remainMB,flowTotalMB:a.general?.totalMB,flowUsedMB:a.general?.usedMB,voice:a.voice?.remain,voiceTotal:a.voice?.total,voiceUsed:a.voice?.used,fetchedAt:a.fetchedAt};rememberUsage(metrics);return {provider:p,metrics,stale:a.stale}}
+  catch{return {provider:p,message:'请抓取移动登录凭据，再从 BoxJS 导入'}}
+ }
+ const all=read(),record=all[p]
+ if(p==='unicom'){
+  const cookie=Keychain.get(UNICOM_COOKIE)
+  if(cookie){
+   if(record&&!force&&record.metrics.unicomSchema===4&&Date.now()-record.metrics.fetchedAt<300000)return {provider:p,metrics:record.metrics}
+   try{
+    const metrics=await queryUnicomCookie(cookie);const saved=read();saved.unicom={metrics,request:null,queryReady:false};write(saved)
+    return {provider:p,metrics}
+   }catch{return {provider:p,metrics:record?.metrics,stale:!!record,message:'联通 Cookie 已导入，但查询失败；请重新抓取或检查接口兼容性'}}
+  }
+ }
+ if(p==='telecom'&&telecomLoginInfo()){
+  if(record&&!force&&record.metrics.telecomSchema===3&&Date.now()-record.metrics.fetchedAt<300000)return {provider:p,metrics:record.metrics}
+  try{const metrics=await queryTelecomLogin();const saved=read();saved.telecom={metrics,request:null,queryReady:false};write(saved);return {provider:p,metrics}}
+  catch{return {provider:p,metrics:record?.metrics,stale:!!record,message:telecomLoginInfo()?.mode==='sms'?'电信短信会话查询失败；请检查网络，若会话已过期请重新验证码登录':'电信登录或查询失败，请检查网络、密码，或在官方 App 完成安全验证'}}
+ }
+ if(p==='telecom'&&Keychain.get(TELECOM_COOKIE)){
+  if(record&&!force&&record.metrics.telecomSchema===2&&Date.now()-record.metrics.fetchedAt<300000)return {provider:p,metrics:record.metrics}
+  try{const metrics=await queryTelecomRequest(JSON.parse(Keychain.get(TELECOM_COOKIE)!));const saved=read();saved.telecom={metrics,request:null,queryReady:false};write(saved);return {provider:p,metrics}}
+  catch{return {provider:p,metrics:record?.metrics,stale:!!record,message:'电信 App 查询失败；请刷新 App 套餐余量，再抓取并导入。Token 或签名可能已失效'}}
+ }
+ if(!record)return {provider:p,message:'尚未导入，请开启抓取后刷新官方 App'}
+ if(!record.queryReady)return {provider:p,metrics:record.metrics,stale:true,message:'查询快照：刷新官方 App 后重新导入以更新'}
+ if(!force&&Date.now()-record.metrics.fetchedAt<300000)return {provider:p,metrics:record.metrics}
+ try{
+  const req=safeRequest(record.request)
+  if(!req||endpoint(req.url)!==p)throw Error('查询地址不匹配')
+  const res=await fetch(req.url,{method:req.method,headers:req.headers,...(req.method==='POST'?{body:req.body}:{}),redirect:'error'})
+  if(!res.ok)throw Error('请求失败')
+  const metrics=normalize(p,await res.json()) as Metrics
+  const latest=read();latest[p]={...record,metrics};write(latest)
+  return {provider:p,metrics}
+ }catch{return {provider:p,metrics:record.metrics,stale:true,message:'查询失败，显示上次数据；请重新抓取并导入'}}
+}
+export async function loadAll(force=false){return Promise.all(providerIds.map(p=>loadProvider(p,force)))}
+export function value(n:number|undefined,unit:string){return typeof n==='number'&&Number.isFinite(n)?(unit==='元'?n.toFixed(2):n.toFixed(n%1?2:0))+' '+unit:'—'}
+export function flowValue(n:number|undefined){return n===undefined?'—':Math.abs(n)>=1024?value(n/1024,'GB'):value(n,'MB')}
+export function timeValue(n:number|undefined){return n?new Date(n).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'尚无数据'}
+
+export const carrierStyles=CARRIER_STYLE_NAMES
+export type CarrierStyle=SharedCarrierStyle
+const STYLE_KEY='carrier.hub.styles.v1'
+export function getCarrierStyle(provider:Provider,family:CarrierFamily='systemMedium'):CarrierStyle {
+ try{const saved=JSON.parse(store.get<string>(STYLE_KEY)||'{}');const style=resolveCarrierStyle(saved[provider+':'+family]??saved[provider]);return style==='四家总览'&&family!=='systemLarge'?'全景':style}catch{return '全景'}
+}
+export function setCarrierStyle(provider:Provider,style:CarrierStyle,family:CarrierFamily='systemMedium'){
+ if(!providerIds.includes(provider)||!carrierStyles.includes(style)||(style==='四家总览'&&family!=='systemLarge'))throw Error('不支持的运营商样式')
+ let saved:Record<string,string>={};try{saved=JSON.parse(store.get<string>(STYLE_KEY)||'{}')}catch{}
+ store.set(STYLE_KEY,JSON.stringify({...saved,[provider+':'+family]:style}))
+}
+
+export function getComparePartner(provider:Provider,family:CarrierFamily='systemMedium'):Provider|undefined{
+ try{const value=JSON.parse(store.get<string>(STYLE_KEY)||'{}')[provider+':'+family+':partner'];return providerIds.includes(value)&&value!==provider?value:undefined}catch{return undefined}
+}
+export function setComparePartner(provider:Provider,partner:Provider,family:CarrierFamily='systemMedium'){
+ if(!providerIds.includes(partner)||partner===provider)throw Error('请选择另一家运营商')
+ let saved:Record<string,string>={};try{saved=JSON.parse(store.get<string>(STYLE_KEY)||'{}')}catch{}
+ store.set(STYLE_KEY,JSON.stringify({...saved,[provider+':'+family+':partner']:partner}))
+}
+
+export function importedProviders():Provider[]{
+ const saved=read()
+ return providerIds.filter(p=>p==='cmcc'?mobileAccounts().length>0:!!saved[p]?.metrics)
+}
+
+export async function loginTelecomAccount(phone:string,password:string,deviceID=''){
+ const sameAccount=telecomAccountMatches(phone)
+ const metrics=await configureTelecomLogin(phone,password,deviceID)
+ if(!sameAccount)clearUsage('telecom')
+ Keychain.remove(TELECOM_COOKIE)
+ const saved=read();saved.telecom={metrics,request:null,queryReady:false};write(saved)
+ return metrics
+}
+export { telecomLoginInfo }
+const NOTES='carrier.hub.account.notes.v1'
+export function carrierNote(p:Provider):string{try{return JSON.parse(store.get<string>(NOTES)||'{}')[p]||''}catch{return ''}}
+export function setCarrierNote(p:Provider,note:string){let saved:any={};try{saved=JSON.parse(store.get<string>(NOTES)||'{}')}catch{};store.set(NOTES,JSON.stringify({...saved,[p]:note.trim().slice(0,40)}))}
+export function accountTitle(s:CarrierState){return carrierNote(s.provider)||(s.metrics?.phoneTail?'尾号 '+s.metrics.phoneTail:providerNames[s.provider])}
+
+export async function loginTelecomSmsAccount(session:{submit:(code:string)=>Promise<any>},code:string){
+ const credentials=await session.submit(code),sameAccount=telecomAccountMatches(credentials.phone)
+ const metrics=await saveTelecomSmsSession(credentials)
+ if(!sameAccount)clearUsage('telecom')
+ Keychain.remove(TELECOM_COOKIE)
+ const saved=read();saved.telecom={metrics,request:null,queryReady:false};write(saved);return metrics
+}

@@ -1,0 +1,33 @@
+{
+  "color": "rgba(0,110,91,1)",
+  "runInApp": false,
+  "author": {
+    "email": null,
+    "name": "zxwzywzy",
+    "homepage": null
+  },
+  "description": "武胜公交：实时线路、站点查询、行程规划与桌面组件",
+  "iconImage": null,
+  "intentInputTypes": [],
+  "icon": "bus.fill",
+  "localizedNames": {
+    "en": "Wusheng Bus",
+    "zh": "武胜公交"
+  },
+  "permissions": null,
+  "entry": "index.tsx",
+  "localizedDescriptions": {
+    "ja": "",
+    "fr": "",
+    "zh": "",
+    "ru": "",
+    "en": "",
+    "es": "",
+    "pt": "",
+    "de": "",
+    "it": ""
+  },
+  "name": "Wusheng Bus",
+  "version": "0.5.2",
+  "contributors": []
+}
