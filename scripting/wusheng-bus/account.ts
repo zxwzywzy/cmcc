@@ -1,8 +1,9 @@
 import CryptoJS from './vendor/crypto-js.js'
+import {clearRideImages} from './ride-widget-cache'
 const KEY='wusheng.bus.auth.v1'
-export type Account={authorization:string;userId:string}
+export type Account={authorization:string;userId:string;widgetSession?:string}
 export function readAccount():Account|undefined{try{const a=JSON.parse(Keychain.get(KEY)||'null');return /^Bearer [^\r\n]{16,32768}$/.test(a?.authorization)&&/^\d{1,24}$/.test(a?.userId)?a:undefined}catch{return undefined}}
-export function forgetAccount(){Keychain.remove(KEY);Storage.set('wusheng.bus.balance',null)}
+export function forgetAccount(){Keychain.remove(KEY);clearRideImages();Storage.set('wusheng.bus.balance',null)}
 export function decodeAccount(raw:string,password:string):Account{
  try{
   if(raw.length>65536)throw Error();const e=JSON.parse(raw)
@@ -17,4 +18,4 @@ export function decodeAccount(raw:string,password:string):Account{
   return {authorization:a.authorization,userId:a.userId}
  }catch{throw Error('账号文件或导入口令不正确')}
 }
-export function saveAccount(a:Account){Keychain.set(KEY,JSON.stringify(a));Storage.set('wusheng.bus.balance',null)}
+export function saveAccount(a:Account){const widgetSession=Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);if(!Keychain.set(KEY,JSON.stringify({...a,widgetSession})))throw Error('登录保存失败');clearRideImages();Storage.set('wusheng.bus.balance',null)}

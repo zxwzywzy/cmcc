@@ -1,0 +1,38 @@
+import {Button,List,Navigation,Widget,Section,Text,TextField,VStack,useEffect,useState} from 'scripting'
+import {cachedNearby,freshPosition,type NearbyStop} from './nearby'
+import {DEFAULT_ORIGIN} from './trip-origin'
+import {searchPlaces,type Place} from './places'
+import {inspectTrip,type Trip} from './trip-planner'
+
+import {boardTrip} from './ride-progress'
+import TripDiagram from './trip-diagram'
+import {advanceTrip,beginTrip,endTrip,readActiveTrip} from './active-trip'
+export default function TripPage({standalone=false}:{standalone?:boolean}={}){
+ const dismiss=Navigation.useDismiss(),toolbar=standalone?{cancellationAction:<Button title="关闭" action={dismiss}/>} : undefined
+ const [active,setActive]=useState(readActiveTrip()),leg=active?.trip.legs[active.legIndex]
+ useEffect(()=>{if(!active)return;const timer=setTimeout(()=>setActive(readActiveTrip()),Math.max(0,active.expires-Date.now())+50);return()=>clearTimeout(timer)},[active?.expires])
+ const [originText,setOriginText]=useState(''),[originHits,setOriginHits]=useState<Place[]>([]),[origin,setOrigin]=useState<Place>(DEFAULT_ORIGIN),[changingOrigin,setChangingOrigin]=useState(false)
+ async function findOrigin(){const id=++gate.epoch;setBusy(true);setOriginHits([]);try{const hits=await searchPlaces(originText);if(id===gate.epoch){setOriginHits(hits);setNote(hits.length?'请选择实际出发地点。':'没有搜到这个起点，请换一个武胜地名。')}}catch{if(id===gate.epoch)setNote('起点搜索失败，请重试。')}finally{if(id===gate.epoch)setBusy(false)}}
+ const [manual,setManual]=useState<Place|null>(null),[source,setSource]=useState('自动定位')
+ const [selected,setSelected]=useState(0)
+ const [query,setQuery]=useState(''),[places,setPlaces]=useState<Place[]>([]),[dest,setDest]=useState<Place|null>(null),[trips,setTrips]=useState<Trip[]>([]),[note,setNote]=useState(''),[busy,setBusy]=useState(false),[gate]=useState({epoch:0})
+ useEffect(()=>()=>{gate.epoch++},[])
+ function edit(s:string){gate.epoch++;setBusy(false);setQuery(s);setPlaces([]);setDest(null);setTrips([]);setNote('')}
+ async function search(){const text=query.trim();if(!text)return;const id=++gate.epoch;setBusy(true);setPlaces([]);setDest(null);setTrips([]);setNote('正在搜索武胜的地点…');try{const hits=await searchPlaces(text);if(id!==gate.epoch)return;setPlaces(hits);if(hits.length){const top=hits.find(p=>p.name===text)||hits[0];await match(top)}else setNote('没找到这个地点。试试完整名称或详细地址。')}catch(e){if(id===gate.epoch)setNote(e instanceof RangeError?e.message:'地点搜索暂不可用，请稍后重试。')}finally{if(id===gate.epoch)setBusy(false)}}
+ async function match(p:Place,override:Place|null=manual){setManual(override);setChangingOrigin(false);setOriginHits([]);const id=++gate.epoch;setDest(p);setSelected(0);setTrips([]);setBusy(true);setNote(override?'正在规划…':'正在查找当前位置最近的站台…');try{
+ let start=override||DEFAULT_ORIGIN,home:NearbyStop|undefined,located=false,sourceText=override?'手动起点':'定位不可用，使用备用起点';
+ if(!override){try{const snap=cachedNearby(),pos=snap?.position,now=Date.now(),recent=pos&&!snap?.locationStale&&!snap?.stale&&now>=pos.timestamp&&now-pos.timestamp<60000&&now>=snap.time&&now-snap.time<60000;const point=recent?pos:await freshPosition();start={name:'当前位置',address:'',latitude:point.latitude,longitude:point.longitude};located=true;home=recent?snap.stop:undefined}catch{}}
+ if(id!==gate.epoch)return;let result=await inspectTrip(start,p,home);
+ if(id!==gate.epoch)return;if(located&&(!result.nearest||result.nearest.meters>5000)){start=DEFAULT_ORIGIN;sourceText='附近无可用站台，使用备用起点';result=await inspectTrip(start,p)}else if(located&&result.nearest){sourceText='定位最近站';start={...start,name:result.nearest.name}}
+ if(id!==gate.epoch)return;setOrigin(start);setSource(sourceText);setTrips(result.trips.slice(0,5));setNote(result.trips.length?'':result.reason+'\n出发地：'+result.originStops+'\n目的地：'+result.destStops)}catch(e){if(id===gate.epoch)setNote((e as Error)?.message||'公交查询失败，请检查网络后重试。')}finally{if(id===gate.epoch)setBusy(false)}}
+ if(active&&leg)return <List navigationTitle="我的行程" toolbar={toolbar}><Section header={<Text>{'前往 '+active.destination}</Text>}><Text fontWeight="semibold">{active.onBoard?'乘坐 '+leg.line+'，在 '+leg.to+' 下车':'去 '+leg.from+'，等 '+leg.line}</Text><Text>{leg.direction+' · '+leg.from+' → '+leg.to+' · '+leg.stops+' 站'}</Text>{active.trip.legs[active.legIndex+1]?<Text>{'下一段换乘 '+active.trip.legs[active.legIndex+1].line}</Text>:null}<Button buttonStyle="borderedProminent" title={!active.onBoard?'我已上车':active.legIndex+1<active.trip.legs.length?'我已下车，开始换乘':'已到达，结束行程'} action={async()=>{if(active.onBoard)setActive(advanceTrip(active));else{const binding=boardTrip(active);setActive(readActiveTrip());Widget.reloadAll();await binding;setActive(readActiveTrip())}Widget.reloadAll()}}/></Section><Section><TripDiagram trip={active.trip} destination={active.destination}/></Section><Section footer={<Text>桌面组件显示本趟行程；上下车请手动确认。</Text>}><Button title="结束行程" action={()=>{endTrip();setActive(undefined);Widget.reloadAll()}}/></Section></List>
+ return <List navigationTitle="怎么坐公交" navigationBarTitleDisplayMode="inline" toolbar={toolbar}>{!dest?<Section header={<Text>{manual?'从'+manual.name+'出发':'从定位最近站出发'}</Text>} footer={<Text>优先定位最近站；定位不可用或附近没有站台时，从武胜县人民政府附近出发。</Text>}><TextField title="输入要去的地点" value={query} onChanged={edit}/><Button title="搜索并规划路线" disabled={!query.trim()||busy} action={search}/></Section>:null}
+ {dest?<Section header={<Text>已选目的地</Text>}><Text fontWeight="semibold">{dest.name}</Text>{dest.address?<Text font={12} foregroundStyle="secondaryLabel">{dest.address}</Text>:null}<Button title="更换目的地" action={()=>{gate.epoch++;setBusy(false);setDest(null);setTrips([]);setNote('请选择具体地点。')}}/></Section>:null}
+ {places.length&&!dest?<Section header={<Text>选择目的地</Text>}>{places.map((p,i)=><Button key={i} disabled={busy} action={()=>match(p)}><VStack alignment="leading" spacing={3}><Text>{p.name}</Text>{p.address?<Text font={12} foregroundStyle="secondaryLabel">{p.address}</Text>:null}</VStack></Button>)}</Section>:null}
+ {dest?<Section><Button title={busy?'正在确定出发站…':source+'：'+origin.name+' · 更换'} disabled={busy} action={()=>setChangingOrigin(!changingOrigin)}/></Section>:null}
+  {dest&&!busy&&(changingOrigin||!trips.length)?<Section header={<Text>选择武胜本地起点</Text>}><Button title="自动定位最近站" action={()=>match(dest,null)}/><Button title={'使用备用起点：'+DEFAULT_ORIGIN.name} action={()=>match(dest,DEFAULT_ORIGIN)}/><TextField title="或输入武胜的出发站名、地标" value={originText} onChanged={s=>{setOriginText(s);setOriginHits([])}}/><Button title="查找出发地点" disabled={!originText.trim()} action={findOrigin}/>{originHits.map((p,i)=><Button key={i} title={p.name+' · '+p.address} action={()=>match(dest,p)}/>)}</Section>:null}
+  {note?<Section><Text>{note}</Text>{dest&&!busy&&!trips.length?<Button title="用苹果地图查公交" action={async()=>{try{await Safari.openURL('https://maps.apple.com/?saddr='+encodeURIComponent(origin.latitude+','+origin.longitude)+'&daddr='+encodeURIComponent(dest.latitude+','+dest.longitude)+'&dirflg=r')}catch{setNote('未能打开苹果地图，请返回重试。')}}}/>:null}</Section>:null}
+ {dest&&trips[selected]?<Section header={<Text>{trips[selected].legs.length===1?'直达方案':'换乘方案'}</Text>}><Button title={'出发 · '+trips[selected].legs.map(l=>l.line).join(' → ')} buttonStyle="borderedProminent" action={()=>{setActive(beginTrip(trips[selected],dest.name));Widget.reloadAll()}}/><TripDiagram trip={trips[selected]} destination={dest.name}/></Section>:null}
+ {trips.length>1?<Section header={<Text>切换方案</Text>}>{trips.map((t,i)=><Button key={i} title={(selected===i?'✓ ':'')+t.legs.map(l=>l.line).join(' → ')+' · '+t.legs[t.legs.length-1].to+'下车'} action={()=>setSelected(i)}/>)}</Section>:null}
+ {trips.length?<Section><Text font={12} foregroundStyle="secondaryLabel">按线路站序匹配，不代表当前有车。距离非步行导航，请核对站牌和运营时间。</Text></Section>:null}</List>
+}

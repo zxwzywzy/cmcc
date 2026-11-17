@@ -1,17 +1,33 @@
 {
-  "name": "Wusheng Bus",
-  "version": "0.5.1",
-  "description": "移除换乘规划和全部车辆地图；保留原实时公交、组件样式与圈X抓取登录",
-  "author": {
-    "name": "zxwzywzy"
-  },
-  "entry": "index.tsx",
-  "icon": "bus.fill",
   "color": "rgba(0,110,91,1)",
   "runInApp": false,
-  "localizedNames": {
-    "zh": "武胜公交",
-    "en": "Wusheng Bus"
+  "author": {
+    "email": null,
+    "name": "zxwzywzy",
+    "homepage": null
   },
-  "remoteResource": "https://raw.githubusercontent.com/zxwzywzy/cmcc/main/packages/wusheng-bus.zip"
+  "description": "武胜公交：实时线路、站点查询、行程规划与桌面组件",
+  "iconImage": null,
+  "intentInputTypes": [],
+  "icon": "bus.fill",
+  "localizedNames": {
+    "en": "Wusheng Bus",
+    "zh": "武胜公交"
+  },
+  "permissions": null,
+  "entry": "index.tsx",
+  "localizedDescriptions": {
+    "ja": "",
+    "fr": "",
+    "zh": "",
+    "ru": "",
+    "en": "",
+    "es": "",
+    "pt": "",
+    "de": "",
+    "it": ""
+  },
+  "name": "Wusheng Bus",
+  "version": "0.5.2",
+  "contributors": []
 }

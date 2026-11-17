@@ -6,6 +6,38 @@ import { readAccount } from './account'
 import {turnPage,switchDirection} from './paging'
 import {widgetRuntime,saveWidgetRuntime,noteWidgetInteraction} from './runtime'
 
+import {boardTrip} from './ride-progress'
+import {readActiveTrip} from './active-trip'
+
+import {rideImageCache} from './ride-widget-cache'
+import {rideGate,sessionTag,supportedRideFamily} from './ride-widget-gate'
+
+export const ShowRideWidgetIntent=AppIntentManager.register({name:'WushengShowRideWidget',protocol:AppIntentProtocol.AppIntent,perform:async({family,version,owner}:{family:string;version:string;owner:string})=>{
+ try{
+  if(!supportedRideFamily(family)||!owner||!version)return
+  const gate=await rideGate(family)
+  if(widgetRuntime().enabled&&sessionTag(readAccount())===owner)await gate.show(version,owner)
+ }finally{Widget.reloadAll()}
+}})
+export const HideRideWidgetIntent=AppIntentManager.register({name:'WushengHideRideWidget',protocol:AppIntentProtocol.AppIntent,perform:async({family}:{family:string})=>{
+ try{if(supportedRideFamily(family))rideGate(family).hide(()=>rideImageCache(family).clear())}finally{Widget.reloadAll()}
+}})
+
+const BOARD_TAP='wusheng.bus.trip.boardTap.v1'
+const boarding=new Set<string>()
+export const BusBoardTripIntent=AppIntentManager.register({name:'WushengBusBoardTrip',protocol:AppIntentProtocol.AppIntent,perform:async({expires,legIndex,tripId}:{expires:number;legIndex:number;tripId:string})=>{
+ const state=readActiveTrip(),now=Date.now()
+ if(!widgetRuntime().enabled||!state||state.onBoard||!Number.isSafeInteger(expires)||expires<=now||state.expires!==expires||(state.tripId||'')!==tripId||!Number.isInteger(legIndex)||state.legIndex!==legIndex){Widget.reloadAll();return}
+ const key=tripId+':'+expires+':'+legIndex,last=Storage.get<{key:string;time:number}>(BOARD_TAP)
+ if(boarding.has(key)||(last?.key===key&&now>=last.time&&now-last.time<2000))return
+ boarding.add(key)
+ try{
+  Storage.set(BOARD_TAP,{key,time:now})
+  await boardTrip(state)
+ }
+ finally{boarding.delete(key);noteWidgetInteraction();Widget.reloadAll()}
+}})
+
 async function refreshOnce(locate=false){
  if(!widgetRuntime().enabled){Widget.reloadAll();return}
  noteWidgetInteraction()

@@ -5,7 +5,7 @@ import json, shutil
 root=Path(__file__).resolve().parents[1]
 source=root/'scripting/wusheng-bus'
 version=json.loads((source/'script.json').read_text(encoding='utf-8'))['version']
-files=[source/n for n in ['index.tsx','widget.tsx','view.tsx','widget-ui.tsx','widget-actions.tsx','api.ts','model.ts','account.ts','login.ts','appearance.ts','runtime.ts','rest-view.tsx','orders.ts','orders-page.tsx','nearby.ts','paging.ts','nearby-view.tsx','map.tsx','ride.ts','ride-page.tsx','transit.ts','transit-session.ts','transit-page.tsx','route-links.ts','version.ts','app_intents.tsx','script.json','README.md']]+sorted((source/'vendor').glob('*'))
+files=[source/n for n in ['README.md', 'account.ts', 'active-trip.ts', 'api.ts', 'app_intents.tsx', 'appearance.ts', 'frequent-stops.ts', 'index.tsx', 'login.ts', 'map.tsx', 'model.ts', 'nearby-view.tsx', 'nearby.ts', 'orders-page.tsx', 'orders.ts', 'paging.ts', 'places.ts', 'qr-ink.ts', 'rest-view.tsx', 'ride-page.tsx', 'ride-progress.ts', 'ride-ticket.tsx', 'ride-widget-cache.ts', 'ride-widget-gate.ts', 'ride-widget.tsx', 'ride.ts', 'route-links.ts', 'runtime.ts', 'script.json', 'style-preview.tsx', 'transit-page.tsx', 'transit-session.ts', 'transit.ts', 'trip-diagram.tsx', 'trip-origin.ts', 'trip-page.tsx', 'trip-planner.ts', 'trip-widget.tsx', 'version.ts', 'view.tsx', 'widget-actions.tsx', 'widget-display.ts', 'widget-ui.tsx', 'widget.tsx']]+sorted((source/'vendor').glob('*'))
 package=root/'packages'/('wusheng-bus-'+version+'.zip')
 with ZipFile(package,'w',compression=ZIP_DEFLATED) as z:
  for p in files:

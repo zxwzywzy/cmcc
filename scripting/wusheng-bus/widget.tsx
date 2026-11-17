@@ -8,17 +8,36 @@ import {RestView} from './rest-view'
 import {stackSlot} from './paging'
 import {widgetRuntime,widgetAwake,widgetReloadIsLocal,widgetRefreshDate,noteWidgetInteraction} from './runtime'
 
+import {readActiveTrip} from './active-trip'
+import {remainingStops} from './ride-progress'
+import {waitingETA,presentTrip} from './trip-widget'
+
+import {presentRideWidget} from './ride-widget'
+
 async function main(){
- const settings=widgetRuntime(),nearby=isNearby(),resting=!widgetAwake(settings)
+ let settings=widgetRuntime()
+ if(String(Widget.parameter||'').trim()==='乘车码'){
+  if(settings.enabled)await presentRideWidget()
+  else Widget.present(<RestView family={Widget.family}/>,{policy:'after',date:widgetRefreshDate(settings,false)})
+  return
+ }
+ const trip=settings.enabled?readActiveTrip():undefined
+ if(trip){
+  const eta=!trip.onBoard&&widgetAwake(settings)?await waitingETA(trip):undefined
+  const remaining=trip.onBoard&&widgetAwake(settings)?await remainingStops(trip).catch(()=>undefined):undefined
+  settings=widgetRuntime()
+  if(presentTrip(settings,isNearby(),trip,eta,remaining))return
+ }
+ const nearby=isNearby(),resting=!widgetAwake(settings)
  const policy={policy:'after' as const,date:widgetRefreshDate(settings,nearby)}
  if(!settings.enabled){Widget.present(<RestView family={Widget.family}/>,policy);return}
  const account=readAccount(),slot=stackSlot(String(Widget.parameter||''))
  let snapshot=nearby?cachedNearby():cachedBus()
  let card=account?Storage.get<Awaited<ReturnType<typeof balance>>>('wusheng.bus.balance')||undefined:undefined
- let cardStale=!!card&&(!Number.isFinite(card.fetchedAt)||Date.now()-card.fetchedAt>5*60000)
+ let cardStale=!!card&&(!Number.isFinite(card.fetchedAt)||card.fetchedAt>Date.now()||Date.now()-card.fetchedAt>=5*60000)
  const recent=!!snapshot&&!snapshot.stale&&Date.now()>=snapshot.time&&Date.now()-snapshot.time<15000
  if(!resting&&!(widgetReloadIsLocal()&&recent)){
-  const needsBalance=!!account&&(!card||!Number.isFinite(card.fetchedAt)||Date.now()-card.fetchedAt>=5*60000)
+  const needsBalance=!!account&&(!card||cardStale)
   const cardWork=(needsBalance?balance(account,{timeout:2}):Promise.resolve(card)).then(value=>({status:'fulfilled' as const,value}),()=>({status:'rejected' as const}))
   const bus=await (nearby?nearbyCurrent({widget:true}):current()).then(value=>({status:'fulfilled' as const,value}),()=>({status:'rejected' as const}))
   if(bus.status==='fulfilled')snapshot=bus.value
@@ -28,6 +47,10 @@ async function main(){
   if(result?.status==='fulfilled'){card=result.value;cardStale=false}
   else cardStale=!!card
  }
+ // A trip may also have started during a normal bus/balance refresh.
+ const latest=widgetRuntime()
+ if(!latest.enabled){Widget.present(<RestView family={Widget.family}/>,{policy:'after',date:widgetRefreshDate(latest,nearby)});return}
+ if(presentTrip(latest,nearby))return
  policy.date=widgetRefreshDate(settings,nearby)
  // Age the displayed copy only; retain the actual fetch/location timestamps.
  if(snapshot){

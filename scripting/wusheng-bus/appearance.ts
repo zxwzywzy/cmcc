@@ -17,8 +17,8 @@ export function saveAppearance(patch:Partial<Appearance>){
 export const styleFor=(family:string)=>appearance().styles[family==='systemSmall'?'systemSmall':family==='systemMedium'?'systemMedium':'systemLarge']
 export function saveStyle(family:BusFamily,value:BusStyle){const v=appearance();return saveAppearance({styles:{...v.styles,[family]:style(value)}})}
 export function palette(theme=appearance().theme){
- const dark={bg:'#071423',ink:'#F2F7F8',muted:'#9AAAB3',accent:'#39D4E0',wash:'#10283A',track:'#294453'}
- const light={bg:'#F7FAFA',ink:'#142D34',muted:'#526870',accent:'#006B72',wash:'#E4F1F2',track:'#C5DBDD'}
+ const dark={bg:'#071423',ink:'#F2F7F8',muted:'#9AAAB3',accent:'#39D4E0',wash:'#10283A',track:'#294453'} as const
+ const light={bg:'#F7FAFA',ink:'#142D34',muted:'#526870',accent:'#006B72',wash:'#E4F1F2',track:'#C5DBDD'} as const
  if(theme==='system')return {bg:{light:light.bg,dark:dark.bg},ink:{light:light.ink,dark:dark.ink},muted:{light:light.muted,dark:dark.muted},accent:{light:light.accent,dark:dark.accent},wash:{light:light.wash,dark:dark.wash},track:{light:light.track,dark:dark.track}}
  return theme==='day'?light:dark
 }

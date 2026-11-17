@@ -28,7 +28,7 @@ export async function loadRouteDetail(request:RouteRequest,snapshot?:NearbySnaps
  line=line||{id:request.lineId,name:request.name||'公交线路',start:stations[0]?.name||'',end:stations.at(-1)?.name||''}
  const p=snapshot?.position,age=p?Date.now()-p.timestamp:Infinity,position=p&&age>=0&&age<=120000?coordinate(p):undefined
  let stop=stations.find(s=>(request.stationId?s.id===request.stationId:request.stationNo!==undefined)&& (request.stationNo===undefined||s.no===request.stationNo))||(!request.stationId&&request.stationNo===undefined?known?.choice.station:undefined)
- if(!stop&&position){stop=stations.filter(s=>coordinate(s)).sort((a,b)=>distance(position,coordinate(a)!)-distance(position,coordinate(b)!))[0]}
+ if(!stop&&!request.stationId&&request.stationNo===undefined&&position){stop=stations.filter(s=>coordinate(s)).sort((a,b)=>distance(position,coordinate(a)!)-distance(position,coordinate(b)!))[0]}
  const target=stop||stations[0]
  if(!target)return {request,line,direction:request.direction,stations,position,items:[],positions:[],time:Date.now(),message:'该方向未返回站点'}
  const choice:Choice={line,direction:request.direction,station:target,destination:stations.at(-1)?.name}
