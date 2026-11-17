@@ -1,3 +1,22 @@
+# 脚本与组件目录
+
+本仓库按运行平台和用途分类。**现有文件地址保持不变**，已经添加的圈 X 订阅、BoxJS 和下载链接无需重配。
+
+| 分类 | 内容与入口 |
+|---|---|
+| Scripting 项目 | [项目索引](scripting/README.md)：[运营商组件](scripting/carriers/)、[武胜公交](scripting/wusheng-bus/) |
+| 圈 X / 抓取脚本 | [脚本分类索引](scripts/README.md)：运营商、公交、App、小程序与分发脚本 |
+| 配置与订阅 | [配置索引](docs/configuration-index.md)：根目录 `.conf`、BoxJS 和规则清单 |
+| 安装包 | [下载索引](packages/README.md)：固定链接、版本包与历史版本 |
+| 文档 | [文档索引](docs/README.md) |
+| 开发 | [构建工具](tools/README.md)、[测试](tests/README.md) |
+
+新增独立 Scripting 项目请放在 `scripting/<项目名>/`，不要混进其他项目目录。安装包放 `packages/`，构建脚本放 `tools/`，测试放 `tests/`。已公开的旧地址不直接移动或删除。
+
+---
+
+## 原使用说明
+
 # Paperclip Cookie · Quantumult X
 
 ## 新增：武胜公交 Scripting 小组件（0.5.1）

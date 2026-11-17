@@ -1,0 +1,64 @@
+# 安装包
+
+## 固定下载入口
+
+- [武胜公交 · Scripting](wusheng-bus.scripting)
+- [武胜公交 · ZIP](wusheng-bus.zip)
+- [运营商组件 · ZIP](carriers.zip)
+
+固定名称用于后续更新；带版本号的文件为历史快照，保留不删除。
+
+## 武胜公交历史版本
+
+- [wusheng-bus-0.0.1.zip](../packages/wusheng-bus-0.0.1.zip)
+- [wusheng-bus-0.0.2.zip](../packages/wusheng-bus-0.0.2.zip)
+- [wusheng-bus-0.0.3.zip](../packages/wusheng-bus-0.0.3.zip)
+- [wusheng-bus-0.1.0.scripting](../packages/wusheng-bus-0.1.0.scripting)
+- [wusheng-bus-0.1.0.zip](../packages/wusheng-bus-0.1.0.zip)
+- [wusheng-bus-0.2.0.scripting](../packages/wusheng-bus-0.2.0.scripting)
+- [wusheng-bus-0.2.0.zip](../packages/wusheng-bus-0.2.0.zip)
+- [wusheng-bus-0.2.1.scripting](../packages/wusheng-bus-0.2.1.scripting)
+- [wusheng-bus-0.2.1.zip](../packages/wusheng-bus-0.2.1.zip)
+- [wusheng-bus-0.2.2.scripting](../packages/wusheng-bus-0.2.2.scripting)
+- [wusheng-bus-0.2.2.zip](../packages/wusheng-bus-0.2.2.zip)
+- [wusheng-bus-0.2.3.scripting](../packages/wusheng-bus-0.2.3.scripting)
+- [wusheng-bus-0.2.3.zip](../packages/wusheng-bus-0.2.3.zip)
+- [wusheng-bus-0.2.4.scripting](../packages/wusheng-bus-0.2.4.scripting)
+- [wusheng-bus-0.2.4.zip](../packages/wusheng-bus-0.2.4.zip)
+- [wusheng-bus-0.2.5.scripting](../packages/wusheng-bus-0.2.5.scripting)
+- [wusheng-bus-0.2.5.zip](../packages/wusheng-bus-0.2.5.zip)
+- [wusheng-bus-0.2.6.scripting](../packages/wusheng-bus-0.2.6.scripting)
+- [wusheng-bus-0.2.6.zip](../packages/wusheng-bus-0.2.6.zip)
+- [wusheng-bus-0.2.7.scripting](../packages/wusheng-bus-0.2.7.scripting)
+- [wusheng-bus-0.2.7.zip](../packages/wusheng-bus-0.2.7.zip)
+- [wusheng-bus-0.2.8.scripting](../packages/wusheng-bus-0.2.8.scripting)
+- [wusheng-bus-0.2.8.zip](../packages/wusheng-bus-0.2.8.zip)
+- [wusheng-bus-0.3.0.scripting](../packages/wusheng-bus-0.3.0.scripting)
+- [wusheng-bus-0.3.0.zip](../packages/wusheng-bus-0.3.0.zip)
+- [wusheng-bus-0.4.0.scripting](../packages/wusheng-bus-0.4.0.scripting)
+- [wusheng-bus-0.4.0.zip](../packages/wusheng-bus-0.4.0.zip)
+- [wusheng-bus-0.4.1.scripting](../packages/wusheng-bus-0.4.1.scripting)
+- [wusheng-bus-0.4.1.zip](../packages/wusheng-bus-0.4.1.zip)
+- [wusheng-bus-0.4.2.scripting](../packages/wusheng-bus-0.4.2.scripting)
+- [wusheng-bus-0.4.2.zip](../packages/wusheng-bus-0.4.2.zip)
+- [wusheng-bus-0.4.3.scripting](../packages/wusheng-bus-0.4.3.scripting)
+- [wusheng-bus-0.4.3.zip](../packages/wusheng-bus-0.4.3.zip)
+- [wusheng-bus-0.5.0.scripting](../packages/wusheng-bus-0.5.0.scripting)
+- [wusheng-bus-0.5.0.zip](../packages/wusheng-bus-0.5.0.zip)
+- [wusheng-bus-0.5.1.scripting](../packages/wusheng-bus-0.5.1.scripting)
+- [wusheng-bus-0.5.1.zip](../packages/wusheng-bus-0.5.1.zip)
+- [wusheng-bus-0.5.2.scripting](../packages/wusheng-bus-0.5.2.scripting)
+- [wusheng-bus-0.5.2.zip](../packages/wusheng-bus-0.5.2.zip)
+
+## 运营商组件历史版本
+
+- [carriers-0.1.10.zip](../packages/carriers-0.1.10.zip)
+- [carriers-0.1.5.zip](../packages/carriers-0.1.5.zip)
+- [carriers-0.1.6.zip](../packages/carriers-0.1.6.zip)
+- [carriers-0.1.7.zip](../packages/carriers-0.1.7.zip)
+- [carriers-0.1.8.zip](../packages/carriers-0.1.8.zip)
+- [carriers-0.1.9.zip](../packages/carriers-0.1.9.zip)
+- [carriers-0.2.0.zip](../packages/carriers-0.2.0.zip)
+- [carriers-0.2.1.zip](../packages/carriers-0.2.1.zip)
+- [carriers-0.2.2.zip](../packages/carriers-0.2.2.zip)
+- [carriers-0.2.3.zip](../packages/carriers-0.2.3.zip)
