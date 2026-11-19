@@ -1,0 +1,12 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="12dp" android:background="@drawable/widget_bg">
+<LinearLayout android:id="@+id/widget_header" android:minHeight="48dp" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:contentDescription="选择候车站">
+<TextView android:id="@+id/widget_station" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="铜陵候车" android:textSize="17sp" android:textStyle="bold" android:textColor="@color/widget_ink" android:maxLines="1" android:ellipsize="end"/>
+<TextView android:id="@+id/widget_time" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="点击刷新" android:textSize="12sp" android:textColor="@color/widget_muted" android:maxLines="1"/>
+<Chronometer android:id="@+id/widget_age" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="12sp" android:textColor="@color/widget_muted" android:maxLines="1" android:visibility="gone"/>
+</LinearLayout>
+<LinearLayout android:id="@+id/widget_rows" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="vertical"/>
+<LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:orientation="horizontal" android:gravity="center_vertical">
+<TextView android:id="@+id/widget_refresh" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:gravity="center" android:text="刷新" android:textColor="@color/widget_accent" android:textSize="12sp" android:maxLines="1"/>
+<TextView android:id="@+id/widget_ride" android:layout_width="0dp" android:layout_weight="1.4" android:layout_height="48dp" android:gravity="center" android:text="去微信乘车" android:textColor="@color/widget_ink" android:background="@drawable/widget_button" android:textStyle="bold" android:textSize="12sp" android:maxLines="1"/>
+<TextView android:id="@+id/widget_reverse" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:gravity="center" android:text="换向" android:textColor="@color/widget_accent" android:textSize="12sp" android:maxLines="1"/>
+</LinearLayout></LinearLayout>

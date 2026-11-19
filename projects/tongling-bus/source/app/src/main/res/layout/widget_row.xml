@@ -1,0 +1,10 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/row_root" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:paddingTop="8dp" android:paddingBottom="8dp" android:gravity="center_vertical">
+<LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+<TextView android:id="@+id/row_route" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="17sp" android:textStyle="bold" android:textColor="@color/widget_ink" android:maxLines="1" android:ellipsize="end"/>
+<TextView android:id="@+id/row_direction" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="11sp" android:textColor="@color/widget_muted" android:maxLines="1" android:ellipsize="end"/>
+<TextView android:id="@+id/row_position" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="12sp" android:textColor="@color/widget_muted" android:maxLines="1" android:ellipsize="end"/>
+<TextView android:id="@+id/row_plate" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="12sp" android:textColor="@color/widget_accent" android:maxLines="1"/>
+<TextView android:id="@+id/row_next" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="11sp" android:textColor="@color/widget_muted" android:maxLines="1" android:ellipsize="end"/>
+</LinearLayout>
+<TextView android:id="@+id/row_status" android:layout_width="wrap_content" android:layout_height="wrap_content" android:maxWidth="80dp" android:paddingStart="8dp" android:textColor="@color/widget_accent" android:textStyle="bold" android:gravity="end" android:maxLines="2"/>
+</LinearLayout>

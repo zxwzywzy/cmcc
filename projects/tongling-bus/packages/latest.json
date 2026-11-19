@@ -1,0 +1,8 @@
+{
+  "versionName": "0.1.0",
+  "versionCode": 1,
+  "minSdk": 26,
+  "url": "https://raw.githubusercontent.com/zxwzywzy/cmcc/main/projects/tongling-bus/packages/tongling-bus.apk",
+  "sha256": "b922ec3ef699690722f55e0b1bf0d4acf1bcd06816ae4cd208f9849a2e67a638",
+  "notes": "首次安卓版本：公交站序、车牌、收藏、三种桌面组件和限时候车；精确GPS、分钟预测及直接亮码未接入。"
+}

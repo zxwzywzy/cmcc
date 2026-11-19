@@ -1,0 +1,2 @@
+<TextView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center_vertical" android:text="点这里选择
+常坐的站台" android:textColor="@color/widget_muted" android:textSize="14sp"/>

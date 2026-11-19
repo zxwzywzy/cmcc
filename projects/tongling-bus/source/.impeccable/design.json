@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-19T07:40:55.4073606Z",
+  "title": "Design System: 铜陵候车",
+  "extensions": {
+    "android": {
+      "platform": "android",
+      "status": "preview",
+      "sourceRoot": "app/src/main/java/com/zxwzywzy/tonglingbus/",
+      "sources": ["Design.kt", "MainActivity.kt", "BusWidgets.kt", "Model.kt", "Background.kt", "BusStore.kt", "app/src/main/res/", "PRODUCT.md", "../docs/surface-brief.md"],
+      "tokens": "DESIGN.md frontmatter owns primitives; this sidecar adds native behavior without duplicating them.",
+      "theme": "System light/dark; static Material 3 schemes, no Dynamic Color. Unassigned roles/type/shape/elevation retain library defaults; platform window theme retains light defaults.",
+      "widgetColorRoles": {"light": "background/ink/muted/primary/primaryContainer from light tokens", "dark": "ink/muted/primary from dark tokens; dedicated widget-dark-bg and widget-dark-button"},
+      "typeHierarchy": "displaySmall: arrival; headlineLarge: first use; headlineMedium: route/settings; headlineSmall: station; titleLarge/Medium: card/state/section/plate; bodyLarge/Medium/Small: station/copy/time; labelLarge: selected stop. System fonts and sp scaling.",
+      "navigation": ["实时公交", "收藏", "组件", "设置"],
+      "nativeControls": "Material 3 TopAppBar, NavigationBar, buttons, FilterChip, OutlinedTextField, ListItem, progress, cards, Surface, AlertDialog and SnackbarHost; detail/picker BackHandler. No expanded-width rail/drawer.",
+      "signature": "Station-sequence diagram; unique vehicle stop matches only, ambiguous reports remain uncertain; no GPS/speed/reliable ETA.",
+      "widgetCapacity": "Minimum resize 160x220dp; scale=max(font,1); compact=width<240 or height<260; rowHeight=(large and not compact?88:64)*scale; reserved=56*scale+72; rows=min(max(truncate((height-reserved)/rowHeight),0),small or compact?1:medium?2:3).",
+      "zeroRows": "Header/time/controls only, no empty prompt. Header opens active route detail when available, otherwise selection; timestamp falls back to active snapshot.",
+      "compact": "Hide position/plate/next; medium with two rows also hides position. Plate only on noncompact large; next needs another arrival and spare height>24*scale. Reverse hidden below 240dp; ride shortened below 280dp or font>1.2; refresh always 刷新.",
+      "freshness": "fetchedAt is local successful query time. App stale on failure, nonpositive timestamp, rollback or age>90s; cached data survives failure. Arrival-card stamp suffix checks age only; compact-card uses full predicate.",
+      "widgetSnapshot": "Observation headline always 上次, with actual oldest displayed query timestamp or active fallback. Headline/time/stale suffix only update on render; zero-row failure check still uses empty displayed list.",
+      "chronometer": "Native elapsedRealtime()-max(now-oldest,0), 已过 %s; positive timestamp and font<1.5 only. Locally elapsed age, not a fetch or freshness guarantee.",
+      "states": {"等待查询":"待查询", "请重新选择站点":"重新选站", "本站附近":"上次 本站附近", "N 站":"上次 N 站", "暂无运营车辆":"上次无车", "车辆位置待确认":"上次待确认", "暂无待到站车辆":"上次已过站"},
+      "runtime": "Foreground/waiting target 15s, waiting max 15min with notification/Stop; ordinary network-constrained JobScheduler target 15min, widget updatePeriodMillis=0. Android/Xiaomi can delay. WeChat launch only.",
+      "verification": {"reported":"Signed release built; 18 unit tests passed; debug/release lint 0 errors; 3 review findings closed. Not rerun for documentation.", "rendered":false, "screenshots":[], "blocker":"Software emulator could not boot", "unverified":"Xiaomi 15 interaction, themes/system bars, font scaling/resizing, Back, notifications, WeChat and background networking", "detector":"Not applicable: native Android; no HTML/CSS previews"}
+    }
+  },
+  "narrative": {"overview":"Code-derived existing native system; preview with explicit verification gap. No new aesthetic direction.", "dos":["Preserve native controls and system font scaling", "Preserve query time, historical language and zero-row fallback"], "donts":["Do not claim rendered signoff", "Do not imply real GPS/ETA or guaranteed background cadence"]}
+}

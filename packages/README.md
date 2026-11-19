@@ -2,6 +2,8 @@
 
 ## 固定下载入口
 
+- [铜陵候车 · 安卓 APK](../projects/tongling-bus/packages/tongling-bus.apk)
+- [铜陵候车 · 源码与校验](../projects/tongling-bus/packages/)
 - [武胜公交 · Scripting](wusheng-bus.scripting)
 - [武胜公交 · ZIP](wusheng-bus.zip)
 - [运营商组件 · ZIP](carriers.zip)
